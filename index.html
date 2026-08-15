@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ResuForm — LaTeX resume builder</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231c1915' width='32' height='32'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' fill='%23f3eee4' font-family='Georgia'%3ER%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=20260816j" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <strong>ResuForm</strong>
+          <span>Form-based resumes, typeset with LaTeX.</span>
+        </div>
+        <div class="top-actions">
+          <select id="template" aria-label="Template">
+            <option value="classic">Classic</option>
+            <option value="modern">Modern</option>
+            <option value="compact">Compact</option>
+            <option value="two_column">Two Column</option>
+            <option value="modern_photo">Modern (photo)</option>
+            <option value="two_column_photo">Two Column (photo)</option>
+          </select>
+          <select id="page" aria-label="Paper size">
+            <option value="letter">Letter</option>
+            <option value="a4">A4</option>
+          </select>
+          <details class="layout-pop" id="layout-pop">
+            <summary>Layout</summary>
+            <div class="layout-panel">
+              <p class="layout-label">Margins (inches)</p>
+              <div class="layout-margins">
+                <label class="top">Top <input id="margin-top" type="number" min="0.15" max="1.75" step="0.05" /></label>
+                <label class="left">Left <input id="margin-left" type="number" min="0.15" max="1.75" step="0.05" /></label>
+                <label class="right">Right <input id="margin-right" type="number" min="0.15" max="1.75" step="0.05" /></label>
+                <label class="bottom">Bottom <input id="margin-bottom" type="number" min="0.15" max="1.75" step="0.05" /></label>
+              </div>
+              <label class="full">Line spacing
+                <input id="line-spacing" type="number" min="0.8" max="1.8" step="0.05" />
+              </label>
+              <p class="hint">1.0 is single spacing. Proof updates immediately; Typeset PDF for the printed page.</p>
+            </div>
+          </details>
+          <button class="btn-primary" id="typeset" type="button">Typeset PDF</button>
+          <button class="btn" id="download-pdf" type="button">Download PDF</button>
+          <button class="btn-ghost" id="download-tex" type="button">Download .tex</button>
+          <button class="btn-ghost" id="library-btn" type="button">Library</button>
+          <button class="btn-ghost" id="example" type="button" title="Opens a sample resume. Your current one stays in Library.">Load example</button>
+        </div>
+        <div class="status" id="status">Proof updates as you type.</div>
+      </header>
+
+      <main class="workspace">
+        <section class="editor">
+          <div class="editor-tabs">
+            <button type="button" data-mode="text" class="active">Plain text</button>
+            <button type="button" data-mode="fields">Fields</button>
+          </div>
+          <p class="hint">
+            Write education, experience, internships, projects, and skills as text. ResuForm turns that into a clean LaTeX resume.
+            Add optional sections (Internships, Fieldwork, Positions of Responsibility, Extra Curricular) from Fields, and use Up/Down to reorder.
+            For photo templates, add a headshot under Fields → Header.
+            Wrap a keyword in <code>**asterisks**</code> to bold it.
+            <button type="button" id="toggle-guide">Show format</button>
+          </p>
+          <div class="editor-body">
+            <pre class="guide" id="guide"></pre>
+            <textarea
+              id="source"
+              spellcheck="true"
+              placeholder="NAME&#10;Your Name&#10;&#10;EDUCATION&#10;School | Degree | Location | Dates"
+            ></textarea>
+            <div class="fields" id="fields"></div>
+          </div>
+        </section>
+
+        <section class="preview">
+          <div class="preview-tabs">
+            <button type="button" data-view="proof" class="active">Proof</button>
+            <button type="button" data-view="pdf">PDF</button>
+            <button type="button" data-view="tex">LaTeX source</button>
+          </div>
+          <pre class="log" id="log"></pre>
+          <div class="preview-main">
+            <div class="pane stage open" id="proof-stage">
+              <div class="preview-frame" id="proof"></div>
+            </div>
+            <div class="pane" id="pdf-pane">
+              <div class="pdf-empty" id="pdf-empty">
+                <p>Click <strong>Typeset PDF</strong> to compile LaTeX and show the resume here.</p>
+                <button class="btn-primary" id="typeset-from-pdf" type="button">Typeset PDF</button>
+              </div>
+              <iframe id="pdf-frame" title="Compiled PDF"></iframe>
+            </div>
+            <pre class="pane" id="tex-view"></pre>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="library-backdrop" id="library-backdrop" hidden></div>
+    <aside class="library" id="library" hidden>
+      <header class="library-head">
+        <div>
+          <h2>Library</h2>
+          <p>Resumes saved in this browser.</p>
+        </div>
+        <button class="btn-ghost" id="library-close" type="button">Close</button>
+      </header>
+      <div class="library-actions">
+        <button class="btn-primary" id="resume-new" type="button">New resume</button>
+        <button class="btn" id="resume-save" type="button">Save copy</button>
+      </div>
+      <ul class="library-list" id="library-list"></ul>
+    </aside>
+
+    <script type="module" src="/static/app.js?v=20260816j"></script>
+  </body>
+</html>
