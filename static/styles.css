@@ -687,6 +687,8 @@ input, .fields textarea, .fields select {
   margin: 4px 0 0;
   color: #c8bfae;
   font-size: 12px;
+  line-height: 1.45;
+  max-width: 28em;
 }
 .library-actions {
   display: flex;
