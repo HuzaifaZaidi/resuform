@@ -1,4 +1,4 @@
-import { FORMAT_GUIDE, SAMPLE_TEXT } from "./sample.js"
+import { FORMAT_GUIDE, SAMPLE_TEXT, emptyResume } from "./sample.js"
 import { parseResumeText, serializeResume } from "./parse.js"
 import { generateLatex } from "./latex.js"
 import { renderPreview } from "./preview.js"
@@ -38,6 +38,7 @@ const els = {
   downloadPdf: document.getElementById("download-pdf"),
   downloadTex: document.getElementById("download-tex"),
   example: document.getElementById("example"),
+  clearFields: document.getElementById("clear-fields"),
   guide: document.getElementById("guide"),
   toggleGuide: document.getElementById("toggle-guide"),
   libraryBtn: document.getElementById("library-btn"),
@@ -50,7 +51,7 @@ const els = {
 }
 
 const state = {
-  mode: "text",
+  mode: "fields",
   view: "proof",
   text: SAMPLE_TEXT,
   resume: parseResumeText(SAMPLE_TEXT),
@@ -760,6 +761,7 @@ function restore() {
   els.guide.textContent = FORMAT_GUIDE
   syncLayoutInputs()
   setView("proof")
+  setMode("fields")
   refreshPreview()
 }
 
@@ -920,7 +922,25 @@ function loadExample() {
   setStatus("Loaded example. Open Library to return to your resume.")
 }
 
+function clearAllFields() {
+  if (!confirm("Clear every field on this resume?\n\nThe resume stays in Library, but all current fields will be emptied.")) {
+    return
+  }
+  state.text = serializeResume(emptyResume())
+  state.photo = ""
+  state.resume = emptyResume()
+  state.dirty = true
+  state.pdfBlob = null
+  els.source.value = state.text
+  persist()
+  refreshPreview()
+  if (state.mode === "fields") renderFields()
+  setView("proof")
+  setStatus("All fields cleared.")
+}
+
 els.example.addEventListener("click", loadExample)
+els.clearFields.addEventListener("click", clearAllFields)
 
 document.addEventListener("click", (event) => {
   if (!els.layoutPop?.open) return
@@ -975,6 +995,7 @@ try {
   setView("proof")
   try {
     refreshPreview()
+    setMode("fields")
   } catch (inner) {
     console.error(inner)
     setStatus("Could not render preview. Click Load example.", "error")

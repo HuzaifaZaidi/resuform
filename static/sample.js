@@ -1,18 +1,18 @@
 import { DEFAULT_ORDER } from "./sections.js"
 
 export const SAMPLE_TEXT = `NAME
-Aanya Mehta
+John Doe
 
 HEADLINE
 Software Engineer
 
 CONTACT
 phone: +1 (415) 555-0134
-email: aanya.mehta@email.com
+email: john.doe@email.com
 location: San Francisco, CA
-linkedin: linkedin.com/in/aanyamehta
-github: github.com/aanyamehta
-website: aanyamehta.dev
+linkedin: linkedin.com/in/johndoexyzabc
+github: github.com/johndoexyzabc
+website: johndoexyzabc.dev
 
 ORDER
 summary, education, internships, experience, projects, skills
@@ -44,10 +44,10 @@ Stripe | Software Engineer | San Francisco, CA | Jul 2024 – Present
 - On-call owner for the payments insights path; wrote runbooks that halved night-time pages
 
 PROJECTS
-Pica | TypeScript, Python, LaTeX | github.com/aanyamehta/pica | 2026
+Pica | TypeScript, Python, LaTeX | github.com/johndoexyzabc/pica | 2026
 - Plain-text resume compositor that typesets Jake-style LaTeX without the user writing TeX
 
-Queryfold | Rust, Apache Arrow | github.com/aanyamehta/queryfold | 2025
+Queryfold | Rust, Apache Arrow | github.com/johndoexyzabc/queryfold | 2025
 - Vectorized mini-engine for filter-project-join over Parquet; 4x faster than a naive Python baseline on 8GB traces
 
 SKILLS
