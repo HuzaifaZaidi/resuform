@@ -112,27 +112,31 @@ function contactCells(resume) {
   return rows
 }
 
-function headerBlock(resume) {
+function nameTable(resume) {
   const name = formatLatex(resume.name || "Your Name")
   const leftBits = [`{\\Huge\\bfseries ${name}}`]
   if (resume.headline) leftBits.push(`{\\small ${formatLatex(resume.headline)}}`)
   if (resume.location) leftBits.push(`{\\small ${formatLatex(resume.location)}}`)
+  return `\\begin{tabular}[c]{@{}l@{}}
+${leftBits.join(" \\\\\n")}
+\\end{tabular}`
+}
 
+function contactTable(resume) {
   const rightRows = contactCells(resume).map((row) => joinPipesLatex(row)).filter(Boolean)
-  const right = rightRows.length
-    ? `\\begin{tabular}[c]{@{}r@{}}
+  if (!rightRows.length) return ""
+  return `\\begin{tabular}[c]{@{}r@{}}
 ${rightRows.map((row) => `{\\small ${row}}`).join(" \\\\\n")}
 \\end{tabular}`
-    : ""
+}
 
+function headerBlock(resume) {
   return `{\\fontfamily{phv}\\selectfont
 \\noindent
 \\begin{tabular*}{\\textwidth}{@{}l@{\\extracolsep{\\fill}}r@{}}
-\\begin{tabular}[c]{@{}l@{}}
-${leftBits.join(" \\\\\n")}
-\\end{tabular}
+${nameTable(resume)}
 &
-${right}
+${contactTable(resume)}
 \\end{tabular*}
 }\\vspace{6pt}`
 }
@@ -141,29 +145,20 @@ function hasPhoto(resume) {
   return Boolean(resume.photo && String(resume.photo).startsWith("data:image"))
 }
 
-function photoInclude(width = "2.8cm") {
-  return `\\includegraphics[width=${width},height=3.5cm,keepaspectratio]{photo.jpg}`
+function photoInclude(width = "2.45cm", height = "3cm") {
+  return `\\includegraphics[width=${width},height=${height},keepaspectratio]{photo.jpg}`
 }
 
 function headerWithPhoto(resume) {
   if (!hasPhoto(resume)) return headerBlock(resume)
-  const name = formatLatex(resume.name || "Your Name")
-  const leftBits = [`{\\Huge\\bfseries ${name}}`]
-  if (resume.headline) leftBits.push(`{\\small ${formatLatex(resume.headline)}}`)
-  if (resume.location) leftBits.push(`{\\small ${formatLatex(resume.location)}}`)
-  const rightRows = contactCells(resume).map((row) => joinPipesLatex(row)).filter(Boolean)
-  const contacts = rightRows.length
-    ? rightRows.map((row) => `{\\small ${row}}`).join(" \\\\\n")
-    : ""
   return `{\\fontfamily{phv}\\selectfont
 \\noindent
-\\begin{tabular*}{\\textwidth}{@{}l@{\\extracolsep{\\fill}}r@{}}
-\\begin{tabular}[c]{@{}l@{}}
-${leftBits.join(" \\\\\n")}
-${contacts ? `\\\\[4pt]\n${contacts}` : ""}
-\\end{tabular}
+\\begin{tabular*}{\\textwidth}{@{}l@{\\extracolsep{\\fill}}r@{\\hspace{10pt}}r@{}}
+${nameTable(resume)}
 &
-\\includegraphics[width=2.8cm,height=3.5cm,keepaspectratio]{photo.jpg}
+${contactTable(resume)}
+&
+${photoInclude()}
 \\end{tabular*}
 }\\vspace{8pt}`
 }
@@ -355,7 +350,7 @@ function bodyTwoColumn(resume, withPhoto = false) {
   const rightBlocks = contentBlocks(resume)
   const left = leftIds.map((id) => leftBlocks[id]?.() || "").filter(Boolean).join("\n\n")
   const right = rightIds.map((id) => rightBlocks[id]?.() || "").filter(Boolean).join("\n\n")
-  const photo = withPhoto && hasPhoto(resume) ? `\\centering\n${photoInclude()}\\vspace{8pt}\n` : ""
+  const photo = withPhoto && hasPhoto(resume) ? `\\centering\n${photoInclude("\\linewidth", "3.7cm")}\\vspace{8pt}\n` : ""
   return `
 \\begin{document}
 

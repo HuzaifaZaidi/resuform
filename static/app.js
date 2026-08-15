@@ -496,7 +496,7 @@ function downloadBlob(blob, name) {
 function showPdf(blob) {
   state.pdfBlob = blob
   if (state.pdfUrl && state.pdfUrl.startsWith("blob:")) URL.revokeObjectURL(state.pdfUrl)
-  state.pdfUrl = `/api/resume.pdf?t=${Date.now()}`
+  state.pdfUrl = URL.createObjectURL(blob)
   const viewer = document.createElement("iframe")
   viewer.id = "pdf-frame"
   viewer.title = "Compiled PDF"
@@ -507,37 +507,87 @@ function showPdf(blob) {
   els.pdfEmpty.hidden = true
 }
 
-async function compilePdf() {
-  const response = await fetch("/api/compile", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tex: currentLatex(),
-      filename: `${filenameBase()}.pdf`,
-      photo: PHOTO_TEMPLATES.includes(state.template) ? state.photo : "",
-    }),
-  })
-  const buffer = await response.arrayBuffer()
-  if (!response.ok) {
-    let detail = `Compile failed (${response.status})`
-    const ctype = response.headers.get("content-type") || ""
-    if (ctype.includes("json")) {
-      try {
-        detail = JSON.parse(new TextDecoder().decode(buffer)).error || detail
-      } catch {
-        detail = new TextDecoder().decode(buffer) || detail
+async function pdfFromProof() {
+  refreshPreview()
+  if (document.fonts?.ready) await document.fonts.ready
+  const source = els.proof.querySelector(".resume-page")
+  if (!source) throw new Error("Nothing to print. Add resume content first.")
+  const html2canvas = window.html2canvas
+  const JsPDF = window.jspdf?.jsPDF
+  if (!html2canvas || !JsPDF) throw new Error("PDF tools did not load. Refresh the page and try again.")
+
+  const holder = document.createElement("div")
+  holder.setAttribute("aria-hidden", "true")
+  holder.style.cssText = "position:fixed;left:-14000px;top:0;background:#fffdf8;"
+  const clone = source.cloneNode(true)
+  clone.style.transform = "none"
+  clone.style.margin = "0"
+  holder.appendChild(clone)
+  document.body.appendChild(holder)
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      backgroundColor: "#fffdf8",
+      useCORS: true,
+      logging: false,
+      letterRendering: true,
+    })
+    const root = clone.getBoundingClientRect()
+    const links = [...clone.querySelectorAll("a[href]")].map((anchor) => {
+      const box = anchor.getBoundingClientRect()
+      return {
+        url: anchor.href,
+        x: box.left - root.left,
+        y: box.top - root.top,
+        w: box.width,
+        h: box.height,
       }
-    } else {
-      detail = new TextDecoder().decode(buffer) || detail
+    })
+    const format = state.page === "a4" ? "a4" : "letter"
+    const pdf = new JsPDF({ unit: "pt", format, compress: true })
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const ratio = pageW / canvas.width
+    const pageHeightPx = pageH / ratio
+    let y = 0
+    let first = true
+    while (y < canvas.height - 0.5) {
+      const sliceH = Math.min(pageHeightPx, canvas.height - y)
+      const slice = document.createElement("canvas")
+      slice.width = canvas.width
+      slice.height = Math.max(1, Math.round(sliceH))
+      slice.getContext("2d").drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height)
+      if (!first) pdf.addPage()
+      first = false
+      pdf.addImage(slice.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, pageW, slice.height * ratio, undefined, "FAST")
+      y += pageHeightPx
     }
-    throw new Error(detail)
+    const scale = canvas.width / root.width
+    const pageHeightCss = pageHeightPx / scale
+    for (const link of links) {
+      if (!link.url || link.url.startsWith("javascript:") || link.w < 1 || link.h < 1) continue
+      let top = link.y
+      let remain = link.h
+      while (remain > 0.5) {
+        const pageIndex = Math.max(0, Math.floor(top / pageHeightCss))
+        const yOnPage = top - pageIndex * pageHeightCss
+        const hOnPage = Math.min(remain, pageHeightCss - yOnPage)
+        pdf.setPage(pageIndex + 1)
+        pdf.link(
+          (link.x / root.width) * pageW,
+          (yOnPage / pageHeightCss) * pageH,
+          (link.w / root.width) * pageW,
+          (hOnPage / pageHeightCss) * pageH,
+          { url: link.url }
+        )
+        top += hOnPage
+        remain -= hOnPage
+      }
+    }
+    return pdf.output("blob")
+  } finally {
+    holder.remove()
   }
-  const bytes = new Uint8Array(buffer)
-  const isPdf = bytes.length >= 4 && String.fromCharCode(...bytes.slice(0, 4)) === "%PDF"
-  if (!isPdf) {
-    throw new Error("Compiler did not return a PDF. Try Download .tex or Open in Overleaf.")
-  }
-  return new Blob([buffer], { type: "application/pdf" })
 }
 
 async function typeset() {
@@ -547,20 +597,20 @@ async function typeset() {
   const extra = document.getElementById("typeset-from-pdf")
   if (extra) extra.disabled = true
   els.downloadPdf.disabled = true
-  setStatus("Typesetting with LaTeX…")
+  setStatus("Building PDF from the proof…")
   els.log.classList.remove("open")
   try {
-    const blob = await compilePdf()
+    const blob = await pdfFromProof()
     showPdf(blob)
     state.dirty = false
     setView("pdf")
-    setStatus("PDF ready.", "ok")
+    setStatus("PDF ready — same layout as Proof.", "ok")
     return blob
   } catch (err) {
     els.log.textContent = err.message || String(err)
     els.log.classList.add("open")
     setView("pdf")
-    setStatus("Typeset failed. You can still download .tex or open Overleaf.", "error")
+    setStatus("Could not build PDF from the proof.", "error")
     return null
   } finally {
     state.compiling = false
@@ -838,14 +888,7 @@ document.getElementById("typeset-from-pdf")?.addEventListener("click", typeset)
 els.downloadPdf.addEventListener("click", async () => {
   const blob = !state.dirty && state.pdfBlob ? state.pdfBlob : await typeset()
   if (!blob) return
-  const a = document.createElement("a")
-  a.href = `/api/resume.pdf?download=1&t=${Date.now()}`
-  a.download = `${filenameBase()}.pdf`
-  a.rel = "noopener"
-  a.style.display = "none"
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  downloadBlob(blob, `${filenameBase()}.pdf`)
 })
 els.downloadTex.addEventListener("click", () => {
   downloadBlob(new Blob([currentLatex()], { type: "application/x-tex" }), `${filenameBase()}.tex`)
