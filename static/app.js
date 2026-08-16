@@ -10,6 +10,9 @@ import {
   normalizeLineSpacing,
   normalizeMargins,
 } from "./layout.js"
+import { initAnalytics, trackEvent } from "./analytics.js"
+
+initAnalytics()
 
 const STORAGE_KEY = "pica-resume-v1"
 const TEMPLATES = ["classic", "modern", "compact", "two_column", "modern_photo", "two_column_photo"]
@@ -415,12 +418,14 @@ function moveSection(id, delta) {
   ;[order[index], order[next]] = [order[next], order[index]]
   state.resume.sectionOrder = order
   syncFromFields()
+  trackEvent("section_reordered", { section_count: order.length })
 }
 
 function addSection(id) {
   ensureResume(state.resume)
   const order = state.resume.sectionOrder
-  if (!order.includes(id)) {
+  const added = !order.includes(id)
+  if (added) {
     const after = {
       internships: order.includes("education") ? "education" : "",
       fieldwork: order.includes("internships") ? "internships" : order.includes("education") ? "education" : "",
@@ -434,6 +439,7 @@ function addSection(id) {
   const def = sectionDef(id)
   if (def?.kind === "roles" && !state.resume[id]?.length) addItem(id)
   else syncFromFields()
+  if (added) trackEvent("section_added", { section_type: id })
 }
 
 function dropSection(id) {
@@ -606,6 +612,7 @@ async function typeset() {
     state.dirty = false
     setView("pdf")
     setStatus("PDF ready — same layout as Proof.", "ok")
+    trackEvent("pdf_generated", { template_name: state.template })
     return blob
   } catch (err) {
     els.log.textContent = err.message || String(err)
@@ -700,6 +707,7 @@ function newResume() {
   applyItem(item, { save: true })
   setLibraryOpen(false)
   setStatus("Started a blank resume.")
+  trackEvent("resume_created")
 }
 
 function saveCopy() {
@@ -716,6 +724,7 @@ function saveCopy() {
   saveLibrary(library)
   renderLibrary()
   setStatus(`Saved copy: ${item.name}`)
+  trackEvent("resume_saved")
 }
 
 function duplicateResume(id) {
@@ -730,6 +739,7 @@ function duplicateResume(id) {
   saveLibrary(library)
   renderLibrary()
   setStatus(`Duplicated ${item.name}.`)
+  trackEvent("resume_duplicated")
 }
 
 function deleteResume(id) {
@@ -747,6 +757,7 @@ function deleteResume(id) {
     renderLibrary()
   }
   setStatus("Deleted from library.")
+  trackEvent("resume_deleted")
 }
 
 function restore() {
@@ -783,6 +794,7 @@ els.template.addEventListener("change", () => {
   state.dirty = true
   persist()
   refreshPreview()
+  if (next !== prev) trackEvent("template_changed", { template_name: next })
 })
 
 els.page.addEventListener("change", () => {
@@ -891,9 +903,11 @@ els.downloadPdf.addEventListener("click", async () => {
   const blob = !state.dirty && state.pdfBlob ? state.pdfBlob : await typeset()
   if (!blob) return
   downloadBlob(blob, `${filenameBase()}.pdf`)
+  trackEvent("pdf_downloaded", { template_name: state.template })
 })
 els.downloadTex.addEventListener("click", () => {
   downloadBlob(new Blob([currentLatex()], { type: "application/x-tex" }), `${filenameBase()}.tex`)
+  trackEvent("latex_downloaded")
 })
 
 function isSameResume(a, b) {
@@ -920,6 +934,7 @@ function loadExample() {
   library.items.unshift(item)
   applyItem(item, { save: true })
   setStatus("Loaded example. Open Library to return to your resume.")
+  trackEvent("example_opened")
 }
 
 function clearAllFields() {

@@ -11,6 +11,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from gaconfig import inject_index
 from texcompile import PDF_CACHE, PDF_LOCK, compile_tex, photo_from_data_url, safe_pdf_name
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -86,6 +87,14 @@ class Handler(BaseHTTPRequestHandler):
         file_path = ROOT / rel
         if not file_path.is_file():
             self._send(404, b"Not found", "text/plain")
+            return
+        if rel == "index.html":
+            html = file_path.read_text(encoding="utf-8")
+            try:
+                html = inject_index(html)
+            except Exception:
+                html = html.replace("%%GA_MEASUREMENT_ID%%", "")
+            self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
             return
         ctype = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
         self._send(200, file_path.read_bytes(), ctype)

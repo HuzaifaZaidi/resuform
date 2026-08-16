@@ -6,3 +6,6 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn flask_app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
     healthCheckPath: /
+    envVars:
+      - key: VITE_GA_MEASUREMENT_ID
+        sync: false

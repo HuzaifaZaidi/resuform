@@ -10,6 +10,7 @@ from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_file, send_from_directory
 
+from gaconfig import inject_index
 from texcompile import PDF_CACHE, PDF_LOCK, compile_tex, photo_from_data_url, safe_pdf_name
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -33,7 +34,12 @@ def disable_cache(response: Response) -> Response:
 
 @app.get("/")
 def index():
-    return send_from_directory(ROOT, "index.html")
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    try:
+        html = inject_index(html)
+    except Exception:
+        html = html.replace("%%GA_MEASUREMENT_ID%%", "")
+    return Response(html, mimetype="text/html; charset=utf-8")
 
 
 @app.post("/api/compile")

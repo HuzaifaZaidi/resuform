@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 *.pdf
 Thumbs.db
 .DS_Store
