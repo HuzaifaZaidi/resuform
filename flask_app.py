@@ -8,7 +8,7 @@ import sys
 import webbrowser
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request, send_file, send_from_directory
+from flask import Flask, Response, jsonify, request, send_file
 
 from gaconfig import inject_index
 from texcompile import PDF_CACHE, PDF_LOCK, compile_tex, photo_from_data_url, safe_pdf_name
@@ -24,6 +24,16 @@ ROOT = Path(__file__).resolve().parent
 PORT = int(os.environ.get("PICA_FLASK_PORT", os.environ.get("PICA_PORT", "5000")))
 
 app = Flask(__name__, static_folder=str(ROOT / "static"), static_url_path="/static")
+app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024
+
+
+def render_page(name: str) -> Response:
+    html = (ROOT / name).read_text(encoding="utf-8")
+    try:
+        html = inject_index(html)
+    except Exception:
+        html = html.replace("%%GA_MEASUREMENT_ID%%", "")
+    return Response(html, mimetype="text/html; charset=utf-8")
 
 
 @app.after_request
@@ -34,12 +44,44 @@ def disable_cache(response: Response) -> Response:
 
 @app.get("/")
 def index():
-    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    return render_page("index.html")
+
+
+@app.get("/ats")
+@app.get("/ats/")
+def ats_page():
+    return render_page("ats.html")
+
+
+@app.post("/api/ats/analyze")
+def api_ats_analyze():
+    from ats.pdfextract import PdfExtractError
+    from ats.service import run_analysis
+
     try:
-        html = inject_index(html)
+        upload = request.files.get("resume")
+        if upload and upload.filename:
+            result = run_analysis(
+                jd_text=request.form.get("jd_text") or "",
+                source="pdf",
+                pdf_bytes=upload.read(),
+            )
+        else:
+            payload = request.get_json(silent=True) or {}
+            structured = payload.get("structured")
+            result = run_analysis(
+                resume_text=str(payload.get("resume_text") or ""),
+                jd_text=str(payload.get("jd_text") or ""),
+                source=str(payload.get("source") or "library"),
+                structured=structured if isinstance(structured, dict) else None,
+            )
+        return jsonify(result)
+    except PdfExtractError as exc:
+        return jsonify(error=str(exc)), 400
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
     except Exception:
-        html = html.replace("%%GA_MEASUREMENT_ID%%", "")
-    return Response(html, mimetype="text/html; charset=utf-8")
+        return jsonify(error="Could not analyze this resume."), 500
 
 
 @app.post("/api/compile")

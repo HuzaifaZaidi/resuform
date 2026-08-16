@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ResuForm — ATS Score</title>
+    <script>window.__GA_MEASUREMENT_ID__ = "%%GA_MEASUREMENT_ID%%";</script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231c1915' width='32' height='32'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' fill='%23f3eee4' font-family='Georgia'%3ER%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=20260817a" />
+  </head>
+  <body class="ats-body">
+    <div class="app ats-app">
+      <header class="topbar">
+        <div class="brand">
+          <strong>ResuForm</strong>
+          <span>ATS Score — local keyword analysis, not a company ATS.</span>
+        </div>
+        <div class="top-actions">
+          <a class="btn-ghost" href="/">Resume builder</a>
+        </div>
+      </header>
+
+      <main class="ats-main">
+        <section class="ats-panel" id="ats-form">
+          <h1>Resuform ATS Score</h1>
+          <p class="ats-lead">
+            Compare a resume with a job description using Resuform’s own matching rules.
+            Nothing is sent to OpenAI, Gemini, or any other AI API.
+          </p>
+
+          <div class="ats-grid">
+            <div class="ats-card">
+              <h2>1. Choose resume</h2>
+              <div class="ats-source-tabs" role="tablist">
+                <button type="button" class="active" data-source="library">Select from Resume Library</button>
+                <button type="button" data-source="pdf">Upload Resume PDF</button>
+              </div>
+              <div id="ats-library-box">
+                <p class="hint ats-hint">Uses resumes already saved in this browser. They are not uploaded as files.</p>
+                <ul class="ats-library-list" id="ats-library-list"></ul>
+              </div>
+              <div id="ats-pdf-box" hidden>
+                <label class="ats-file">
+                  Upload Resume PDF
+                  <input id="ats-pdf" type="file" accept="application/pdf,.pdf" />
+                </label>
+                <p class="hint ats-hint" id="ats-pdf-name">PDF text is extracted on the Resuform server. Scanned image PDFs cannot be read.</p>
+              </div>
+            </div>
+
+            <div class="ats-card">
+              <h2>2. Paste job description</h2>
+              <label class="ats-label" for="ats-jd">Paste Job Description</label>
+              <textarea id="ats-jd" rows="16" placeholder="Paste the complete job description here."></textarea>
+            </div>
+          </div>
+
+          <div class="ats-actions">
+            <button class="btn-primary" id="ats-analyze" type="button" disabled>Analyze Resume</button>
+            <p class="status" id="ats-status">Choose a resume and paste a job description.</p>
+          </div>
+        </section>
+
+        <section class="ats-panel" id="ats-results" hidden>
+          <p class="ats-kicker">Resuform ATS Score</p>
+          <div class="ats-score-hero">
+            <div class="ats-score-num" id="ats-score-num">—</div>
+            <div>
+              <h1>ATS SCORE</h1>
+              <p class="ats-disclaimer" id="ats-disclaimer"></p>
+            </div>
+          </div>
+          <div class="ats-bars" id="ats-bars"></div>
+
+          <div class="ats-split">
+            <div class="ats-card">
+              <h2>Matched skills</h2>
+              <div class="ats-chips" id="ats-matched"></div>
+            </div>
+            <div class="ats-card">
+              <h2>Potentially missing</h2>
+              <div class="ats-chips missing" id="ats-missing"></div>
+              <p class="ats-warning" id="ats-warning"></p>
+            </div>
+          </div>
+
+          <div class="ats-card">
+            <h2>Required skills</h2>
+            <table class="ats-table" id="ats-skill-table">
+              <thead><tr><th>Term</th><th>Match</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="ats-card" id="ats-requirements"></div>
+          <div class="ats-split">
+            <div class="ats-card" id="ats-structure"></div>
+            <div class="ats-card" id="ats-formatting"></div>
+          </div>
+
+          <div class="ats-actions">
+            <button class="btn-primary" id="ats-again" type="button">Analyze another resume</button>
+            <a class="btn" href="/">Return to resume builder</a>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/static/ats.js?v=20260817a"></script>
+  </body>
+</html>

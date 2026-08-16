@@ -80,6 +80,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/":
             path = "/index.html"
+        if path in ("/ats", "/ats/"):
+            path = "/ats.html"
         rel = path.lstrip("/").replace("\\", "/")
         if ".." in Path(rel).parts:
             self._send(400, b"Bad path", "text/plain")
@@ -88,7 +90,7 @@ class Handler(BaseHTTPRequestHandler):
         if not file_path.is_file():
             self._send(404, b"Not found", "text/plain")
             return
-        if rel == "index.html":
+        if rel in ("index.html", "ats.html"):
             html = file_path.read_text(encoding="utf-8")
             try:
                 html = inject_index(html)
@@ -109,11 +111,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, body, "application/json")
 
     def _handle_post(self) -> None:
-        if self.path.split("?", 1)[0] != "/api/compile":
-            self._send(404, b"Not found", "text/plain")
-            return
+        route = self.path.split("?", 1)[0]
         length = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(length)
+        if route == "/api/ats/analyze":
+            self._ats_analyze(raw)
+            return
+        if route != "/api/compile":
+            self._send(404, b"Not found", "text/plain")
+            return
         try:
             payload = json.loads(raw.decode("utf-8"))
             tex = payload.get("tex") or ""
@@ -136,6 +142,38 @@ class Handler(BaseHTTPRequestHandler):
             message = str(exc).strip() or "Compile failed."
             body = json.dumps({"error": message}).encode("utf-8")
             self._send(400, body, "application/json")
+
+    def _ats_analyze(self, raw: bytes) -> None:
+        from ats.httpparse import parse_multipart
+        from ats.pdfextract import PdfExtractError
+        from ats.service import run_analysis
+
+        try:
+            ctype = self.headers.get("Content-Type", "")
+            if "multipart/form-data" in ctype:
+                fields, files = parse_multipart(ctype, raw)
+                result = run_analysis(
+                    jd_text=fields.get("jd_text") or "",
+                    source="pdf",
+                    pdf_bytes=files.get("resume"),
+                )
+            else:
+                payload = json.loads(raw.decode("utf-8") or "{}")
+                structured = payload.get("structured")
+                result = run_analysis(
+                    resume_text=str(payload.get("resume_text") or ""),
+                    jd_text=str(payload.get("jd_text") or ""),
+                    source=str(payload.get("source") or "library"),
+                    structured=structured if isinstance(structured, dict) else None,
+                )
+            body = json.dumps(result).encode("utf-8")
+            self._send(200, body, "application/json")
+        except (PdfExtractError, ValueError, json.JSONDecodeError) as exc:
+            body = json.dumps({"error": str(exc) or "Could not analyze this resume."}).encode("utf-8")
+            self._send(400, body, "application/json")
+        except Exception:
+            body = json.dumps({"error": "Could not analyze this resume."}).encode("utf-8")
+            self._send(500, body, "application/json")
 
 
 class Server(ThreadingHTTPServer):

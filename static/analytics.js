@@ -10,9 +10,10 @@ const ALLOWED_EVENTS = new Set([
   "pdf_generated",
   "pdf_downloaded",
   "latex_downloaded",
+  "ats_analyzed",
 ])
 
-const ALLOWED_PARAMS = new Set(["template_name", "section_type", "section_count"])
+const ALLOWED_PARAMS = new Set(["template_name", "section_type", "section_count", "source_type", "score"])
 
 function measurementId() {
   const raw = String(window.__GA_MEASUREMENT_ID__ || "").trim()
