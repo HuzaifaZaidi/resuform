@@ -163,6 +163,17 @@ function field(id, label, value, multiline = false) {
   return `<label>${label}${control}</label>`
 }
 
+function sectionBlock(title, tools, body, sectionId = "") {
+  const attr = sectionId ? ` data-section="${sectionId}"` : ""
+  return `<details class="field-group" open${attr}>
+    <summary>
+      <span class="field-title">${title}</span>
+      <span class="field-tools" data-stop-toggle>${tools || ""}</span>
+    </summary>
+    ${body}
+  </details>`
+}
+
 function escapeAttr(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -195,9 +206,14 @@ function compressPhoto(file) {
 
 function roleCards(kind, items, orgLabel, roleLabel) {
   return (items || [])
-    .map(
-      (item, i) => `<div class="card">
-        <div class="card-head"><span>Entry ${i + 1}</span><button type="button" data-remove="${kind}:${i}">Remove</button></div>
+    .map((item, i) => {
+      const heading = item.title || item.company || `Entry ${i + 1}`
+      const sub = [item.company && item.title ? item.company : "", item.dates].filter(Boolean).join(" · ")
+      return `<div class="card">
+        <div class="card-head">
+          <div><strong>${escapeAttr(heading)}</strong>${sub ? `<em>${escapeAttr(sub)}</em>` : ""}</div>
+          <button type="button" data-remove="${kind}:${i}">Remove</button>
+        </div>
         <div class="grid-2">
           ${field(`${kind}.${i}.company`, orgLabel, item.company)}
           ${field(`${kind}.${i}.title`, roleLabel, item.title)}
@@ -206,7 +222,7 @@ function roleCards(kind, items, orgLabel, roleLabel) {
         </div>
         ${field(`${kind}.${i}.bullets`, "Details (one per line)", item.bullets, true)}
       </div>`
-    )
+    })
     .join("")
 }
 
@@ -221,10 +237,7 @@ function renderSectionFields(r, id) {
   const def = sectionDef(id)
   if (!def) return ""
   if (def.kind === "text") {
-    return `<div class="field-group" data-section="${id}">
-      <h3>${def.label} ${sectionChrome(id)}</h3>
-      ${field("summary", "Summary", r.summary, true)}
-    </div>`
+    return sectionBlock(def.label, sectionChrome(id), field("summary", "Summary", r.summary, true), id)
   }
   if (def.kind === "education") {
     const tableEdu = r.educationLayout === "table"
@@ -232,7 +245,10 @@ function renderSectionFields(r, id) {
       .map((item, i) =>
         tableEdu
           ? `<div class="card">
-        <div class="card-head"><span>Row ${i + 1}</span><button type="button" data-remove="education:${i}">Remove</button></div>
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.degree || item.school || `Row ${i + 1}`)}</strong>${item.school ? `<em>${escapeAttr(item.school)}</em>` : ""}</div>
+          <button type="button" data-remove="education:${i}">Remove</button>
+        </div>
         <div class="grid-2">
           ${field(`education.${i}.degree`, "Course", item.degree)}
           ${field(`education.${i}.school`, "Institute", item.school)}
@@ -241,7 +257,10 @@ function renderSectionFields(r, id) {
         </div>
       </div>`
           : `<div class="card">
-        <div class="card-head"><span>Education ${i + 1}</span><button type="button" data-remove="education:${i}">Remove</button></div>
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.degree || item.school || `Education ${i + 1}`)}</strong>${item.school && item.degree ? `<em>${escapeAttr(item.school)}</em>` : ""}</div>
+          <button type="button" data-remove="education:${i}">Remove</button>
+        </div>
         <div class="grid-2">
           ${field(`education.${i}.school`, "School", item.school)}
           ${field(`education.${i}.degree`, "Degree", item.degree)}
@@ -252,33 +271,35 @@ function renderSectionFields(r, id) {
       </div>`
       )
       .join("")
-    return `<div class="field-group" data-section="${id}">
-      <h3>${def.label}
-        <button type="button" data-add="education">+ Add</button>
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="education">Add</button>
         ${sectionChrome(id, `<span class="layout-toggle">
           <button type="button" data-edu-layout="list" class="${tableEdu ? "" : "on"}">List</button>
           <button type="button" data-edu-layout="table" class="${tableEdu ? "on" : ""}">Table</button>
-        </span>`)}
-      </h3>
-      ${edu || "<p class='hint'>No schools yet.</p>"}
-    </div>`
+        </span>`)}`,
+      edu || "<p class='hint'>No schools yet.</p>",
+      id
+    )
   }
   if (def.kind === "roles") {
     const cards = roleCards(id, r[id], def.org, def.role)
     const optional = def.core ? "" : `<button type="button" data-drop-section="${id}">Remove</button>`
-    return `<div class="field-group" data-section="${id}">
-      <h3>${def.label}
-        <button type="button" data-add="${id}">+ Add</button>
-        ${sectionChrome(id, optional)}
-      </h3>
-      ${cards || "<p class='hint'>No entries yet.</p>"}
-    </div>`
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="${id}">Add</button> ${sectionChrome(id, optional)}`,
+      cards || "<p class='hint'>No entries yet.</p>",
+      id
+    )
   }
   if (def.kind === "projects") {
     const projects = (r.projects || [])
       .map(
         (item, i) => `<div class="card">
-        <div class="card-head"><span>Project ${i + 1}</span><button type="button" data-remove="projects:${i}">Remove</button></div>
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.name || `Project ${i + 1}`)}</strong>${item.tech ? `<em>${escapeAttr(item.tech)}</em>` : ""}</div>
+          <button type="button" data-remove="projects:${i}">Remove</button>
+        </div>
         <div class="grid-2">
           ${field(`projects.${i}.name`, "Name", item.name)}
           ${field(`projects.${i}.tech`, "Tech", item.tech)}
@@ -289,17 +310,22 @@ function renderSectionFields(r, id) {
       </div>`
       )
       .join("")
-    return `<div class="field-group" data-section="${id}">
-      <h3>${def.label} <button type="button" data-add="projects">+ Add</button> ${sectionChrome(id)}</h3>
-      ${projects || "<p class='hint'>No projects yet.</p>"}
-    </div>`
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="projects">Add</button> ${sectionChrome(id)}`,
+      projects || "<p class='hint'>No projects yet.</p>",
+      id
+    )
   }
   if (def.kind === "skills") {
     const colSkills = r.skillsLayout === "columns"
     const skills = (r.skills || [])
       .map(
         (item, i) => `<div class="card">
-        <div class="card-head"><span>Skill group ${i + 1}</span><button type="button" data-remove="skills:${i}">Remove</button></div>
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.category || `Skill group ${i + 1}`)}</strong></div>
+          <button type="button" data-remove="skills:${i}">Remove</button>
+        </div>
         <div class="grid-2">
           ${field(`skills.${i}.category`, "Category", item.category)}
           ${field(`skills.${i}.items`, "Items", item.items)}
@@ -307,16 +333,16 @@ function renderSectionFields(r, id) {
       </div>`
       )
       .join("")
-    return `<div class="field-group" data-section="${id}">
-      <h3>${def.label}
-        <button type="button" data-add="skills">+ Add</button>
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="skills">Add</button>
         ${sectionChrome(id, `<span class="layout-toggle">
           <button type="button" data-skills-layout="list" class="${colSkills ? "" : "on"}">List</button>
           <button type="button" data-skills-layout="columns" class="${colSkills ? "on" : ""}">Columns</button>
-        </span>`)}
-      </h3>
-      ${skills || "<p class='hint'>No skills yet.</p>"}
-    </div>`
+        </span>`)}`,
+      skills || "<p class='hint'>No skills yet.</p>",
+      id
+    )
   }
   return ""
 }
@@ -329,9 +355,10 @@ function renderFields() {
     .map((def) => `<option value="${def.id}">${def.label}</option>`)
     .join("")
   els.fields.innerHTML = `
-    <div class="field-group">
-      <h3>Header</h3>
-      <div class="grid-2">
+    ${sectionBlock(
+      "Personal information",
+      "",
+      `<div class="grid-2">
         ${field("name", "Name", r.name)}
         ${field("headline", "Headline", r.headline)}
         ${field("phone", "Phone", r.phone)}
@@ -344,18 +371,19 @@ function renderFields() {
       <label>Photo
         <input type="file" id="photo-file" accept="image/*" />
       </label>
-      ${state.photo ? `<div class="photo-edit"><img src="${state.photo}" alt="Candidate photo" /><button type="button" id="photo-clear">Remove photo</button></div>` : `<p class="hint">Used by Modern (photo) and Two Column (photo). Pick a headshot, then switch to one of those templates.</p>`}
-    </div>
-    <div class="field-group">
-      <h3>Section order</h3>
-      <p class="hint">Use Up/Down on each section, or add Internships, Fieldwork, POR, Extra Curricular.</p>
+      ${state.photo ? `<div class="photo-edit"><img src="${state.photo}" alt="Candidate photo" /><button type="button" id="photo-clear">Remove photo</button></div>` : `<p class="hint">Used by Modern (photo) and Two Column (photo). Pick a headshot, then switch to one of those templates.</p>`}`
+    )}
+    ${sectionBlock(
+      "Formatting / layout",
+      "",
+      `<p class="hint">Use Up/Down on each section, or add Internships, Fieldwork, POR, Extra Curricular. Template, paper size, and margins are in the header.</p>
       ${addOptions ? `<label>Add section
         <select id="add-section">
           <option value="">Choose…</option>
           ${addOptions}
         </select>
-      </label>` : "<p class='hint'>All optional sections are on the resume.</p>"}
-    </div>
+      </label>` : "<p class='hint'>All optional sections are on the resume.</p>"}`
+    )}
     ${order.map((id) => renderSectionFields(r, id)).join("")}
   `
   document.getElementById("add-section")?.addEventListener("change", (event) => {
@@ -693,7 +721,7 @@ function applyItem(item, { save = false } = {}) {
 function renderLibrary() {
   const items = [...library.items].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
   if (!items.length) {
-    els.libraryList.innerHTML = `<li class="library-empty">No saved resumes yet. Write one, then open Library again — the current draft is kept automatically.</li>`
+    els.libraryList.innerHTML = `<li class="library-empty"><strong>No resumes yet</strong><p>Create your first resume or load an example to get started.</p></li>`
     return
   }
   els.libraryList.innerHTML = items
@@ -701,7 +729,8 @@ function renderLibrary() {
       const current = item.id === state.currentId
       return `<li class="${current ? "current" : ""}" data-id="${item.id}">
         <h3>${escapeAttr(item.name || titleFromText(item.text))}${current ? " · open" : ""}</h3>
-        <time>${formatWhen(item.updatedAt)}</time>
+        <span class="meta">${escapeAttr(item.template || "classic")} template</span>
+        <time datetime="">${formatWhen(item.updatedAt)}</time>
         <div class="row-actions">
           <button type="button" data-open="${item.id}">Open</button>
           <button type="button" data-rename="${item.id}">Rename</button>
@@ -716,7 +745,13 @@ function renderLibrary() {
 function setLibraryOpen(open) {
   els.library.hidden = !open
   els.libraryBackdrop.hidden = !open
-  if (open) renderLibrary()
+  document.body.style.overflow = open ? "hidden" : ""
+  if (open) {
+    renderLibrary()
+    if (location.hash !== "#library") history.replaceState(null, "", "#library")
+  } else if (location.hash === "#library") {
+    history.replaceState(null, "", location.pathname + location.search)
+  }
 }
 
 function openResume(id) {
@@ -902,6 +937,7 @@ els.fields.addEventListener("input", (event) => {
 })
 
 els.fields.addEventListener("click", (event) => {
+  if (event.target.closest("[data-stop-toggle]")) event.preventDefault()
   const add = event.target.dataset.add
   const remove = event.target.dataset.remove
   const layout = event.target.dataset.eduLayout
@@ -1005,9 +1041,10 @@ els.example.addEventListener("click", loadExample)
 els.clearFields.addEventListener("click", clearAllFields)
 
 document.addEventListener("click", (event) => {
-  if (!els.layoutPop?.open) return
-  if (els.layoutPop.contains(event.target)) return
-  els.layoutPop.open = false
+  if (els.layoutPop?.open && !els.layoutPop.contains(event.target)) els.layoutPop.open = false
+  document.querySelectorAll(".more-menu").forEach((menu) => {
+    if (menu.open && !menu.contains(event.target)) menu.open = false
+  })
 })
 
 els.libraryBtn.addEventListener("click", () => {
@@ -1065,3 +1102,7 @@ try {
     setStatus("Could not render preview. Click Load example.", "error")
   }
 }
+if (location.hash === "#library") setLibraryOpen(true)
+window.addEventListener("hashchange", () => {
+  if (location.hash === "#library") setLibraryOpen(true)
+})

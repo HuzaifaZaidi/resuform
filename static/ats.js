@@ -27,6 +27,9 @@ const els = {
   analyze: document.getElementById("ats-analyze"),
   status: document.getElementById("ats-status"),
   scoreNum: document.getElementById("ats-score-num"),
+  scoreHero: document.getElementById("ats-score-hero"),
+  scoreRing: document.getElementById("ats-score-ring"),
+  scoreBand: document.getElementById("ats-score-band"),
   disclaimer: document.getElementById("ats-disclaimer"),
   bars: document.getElementById("ats-bars"),
   matched: document.getElementById("ats-matched"),
@@ -47,6 +50,9 @@ const els = {
   geminiModel: document.getElementById("ats-gemini-model"),
   aiResults: document.getElementById("ats-ai-results"),
   aiScoreNum: document.getElementById("ats-ai-score-num"),
+  aiScoreHero: document.getElementById("ats-ai-score-hero"),
+  aiScoreRing: document.getElementById("ats-ai-score-ring"),
+  aiScoreBand: document.getElementById("ats-ai-score-band"),
   aiDisclaimer: document.getElementById("ats-ai-disclaimer"),
   aiBars: document.getElementById("ats-ai-bars"),
   aiStrengths: document.getElementById("ats-ai-strengths"),
@@ -67,6 +73,33 @@ const state = {
   lastResumeText: "",
   lastJdText: "",
   lastStructured: null,
+}
+
+function scoreTone(score) {
+  const value = Number(score)
+  if (!Number.isFinite(value)) return { tone: "neutral", label: "", note: "" }
+  if (value >= 80) {
+    return { tone: "good", label: "Strong match", note: "Good alignment with this job description, with some remaining gaps." }
+  }
+  if (value >= 60) {
+    return { tone: "warn", label: "Partial match", note: "Some alignment; several requirements still need evidence on the resume." }
+  }
+  return { tone: "bad", label: "Weak match", note: "Limited alignment with this job description as written." }
+}
+
+function paintScore(numEl, ringEl, heroEl, bandEl, score) {
+  const value = Number(score)
+  if (numEl) numEl.textContent = Number.isFinite(value) ? String(Math.round(value)) : "—"
+  const band = scoreTone(value)
+  if (heroEl) heroEl.dataset.tone = band.tone
+  if (bandEl) {
+    bandEl.innerHTML = band.label ? `<strong>${escapeHtml(band.label)}</strong><span>${escapeHtml(band.note)}</span>` : ""
+  }
+  if (ringEl && Number.isFinite(value)) {
+    const c = 2 * Math.PI * 52
+    ringEl.style.strokeDasharray = String(c)
+    ringEl.style.strokeDashoffset = String(c * (1 - Math.max(0, Math.min(100, value)) / 100))
+  }
 }
 
 function setStatus(text, kind = "") {
@@ -130,7 +163,7 @@ function renderLibrary() {
   const library = loadLibrary()
   const items = library.items || []
   if (!items.length) {
-    els.libraryList.innerHTML = `<li class="ats-empty">No resumes in this browser yet. Save one from the resume builder, or upload a PDF.</li>`
+    els.libraryList.innerHTML = `<li class="ats-empty">No resume selected. Save one from the resume builder, or upload a PDF.</li>`
     state.resumeId = ""
     refreshReady()
     return
@@ -320,7 +353,7 @@ async function loadResumeForGemini() {
 
 function renderAiResults(data) {
   const overall = Number.isFinite(Number(data.overall_alignment)) ? Math.round(Number(data.overall_alignment)) : 0
-  if (els.aiScoreNum) els.aiScoreNum.textContent = `${overall} / 100`
+  paintScore(els.aiScoreNum, els.aiScoreRing, els.aiScoreHero, els.aiScoreBand, overall)
   els.aiDisclaimer.textContent = AI_DISCLAIMER
   const bars = [
     ["Technical Alignment", data.technical_alignment],
@@ -422,7 +455,7 @@ async function runGeminiAnalysis() {
 }
 
 function renderResults(data) {
-  els.scoreNum.textContent = `${data.score} / 100`
+  paintScore(els.scoreNum, els.scoreRing, els.scoreHero, els.scoreBand, data.score)
   els.disclaimer.textContent = data.disclaimer || ""
   els.warning.textContent = data.warning || ""
   const order = [

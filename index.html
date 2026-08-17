@@ -5,24 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ResuForm — LaTeX resume builder</title>
     <script>window.__GA_MEASUREMENT_ID__ = "%%GA_MEASUREMENT_ID%%";</script>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231c1915' width='32' height='32'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' fill='%23f3eee4' font-family='Georgia'%3ER%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%234f46e5' rx='8' width='32' height='32'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='15' fill='%23ffffff' font-family='Inter,Arial' font-weight='700'%3ER%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=20260817m" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260818c" />
     <script src="/static/vendor/html2canvas.min.js"></script>
     <script src="/static/vendor/jspdf.umd.min.js"></script>
   </head>
   <body>
     <div class="app">
       <header class="topbar">
-        <div class="brand">
+        <a class="brand" href="/" aria-label="ResuForm home">
+          <span class="brand-mark" aria-hidden="true">R</span>
           <strong>ResuForm</strong>
-          <span>Form-based resumes, typeset with LaTeX.</span>
-        </div>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link is-active" href="/" aria-current="page">Builder</a>
+          <a class="nav-link" href="/ats">ATS</a>
+          <button class="nav-link" id="library-btn" type="button" title="Saved on this browser only. Not synced to an account.">Library</button>
+        </nav>
         <div class="top-actions">
           <select id="template" aria-label="Template">
             <option value="classic">Classic</option>
@@ -54,30 +59,38 @@
           </details>
           <button class="btn-primary" id="typeset" type="button">Typeset PDF</button>
           <button class="btn" id="download-pdf" type="button">Download PDF</button>
-          <button class="btn-ghost" id="download-tex" type="button">Download .tex</button>
-          <button class="btn-ghost" id="clear-fields" type="button" title="Clears every field on the current resume.">Clear fields</button>
-          <button class="btn-ghost" id="library-btn" type="button" title="Saved on this browser only. Not synced to an account.">Library</button>
-          <a class="btn-ghost" href="/ats">ATS Score</a>
-          <button class="btn-ghost" id="example" type="button" title="Opens a sample resume. Your current one stays in Library.">Load example</button>
+          <details class="more-menu">
+            <summary class="btn-ghost">More</summary>
+            <div class="more-panel">
+              <button class="btn-ghost" id="download-tex" type="button">Download .tex</button>
+              <button class="btn-ghost" id="clear-fields" type="button" title="Clears every field on the current resume.">Clear fields</button>
+              <button class="btn-ghost" id="example" type="button" title="Opens a sample resume. Your current one stays in Library.">Load example</button>
+            </div>
+          </details>
         </div>
-        <div class="status" id="status">Proof updates as you type.</div>
       </header>
+      <div class="status-bar">
+        <p class="status" id="status">Proof updates as you type.</p>
+      </div>
 
       <main class="workspace">
-        <section class="editor">
+        <section class="editor" aria-label="Resume editor">
+          <div class="editor-intro">
+            <h1>Resume</h1>
+            <p>Build professional LaTeX resumes without writing LaTeX.</p>
+          </div>
           <div class="editor-tabs">
             <button type="button" data-mode="text">Plain text</button>
             <button type="button" data-mode="fields" class="active">Fields</button>
           </div>
-          <p class="hint">
-            Write education, experience, internships, projects, and skills as text. ResuForm turns that into a clean LaTeX resume.
-            Add optional sections (Internships, Fieldwork, Positions of Responsibility, Extra Curricular) from Fields, and use Up/Down to reorder.
-            For photo templates, add a headshot under Fields → Header.
-            Library stays on this browser only — not on the server or in a cloud account.
-            Wrap a keyword in <code>**asterisks**</code> to bold it.
-            <button type="button" id="toggle-guide">Show format</button>
-          </p>
           <div class="editor-body">
+            <p class="hint">
+              Write education, experience, internships, projects, and skills as text. ResuForm turns that into a clean LaTeX resume.
+              Add optional sections from Fields, and use Up/Down to reorder.
+              Library stays on this browser only.
+              Wrap a keyword in <code>**asterisks**</code> to bold it.
+              <button type="button" id="toggle-guide">Show format</button>
+            </p>
             <pre class="guide" id="guide"></pre>
             <textarea
               id="source"
@@ -89,7 +102,7 @@
           </div>
         </section>
 
-        <section class="preview">
+        <section class="preview" aria-label="Resume preview">
           <div class="preview-tabs">
             <button type="button" data-view="proof" class="active">Proof</button>
             <button type="button" data-view="pdf">PDF</button>
@@ -114,7 +127,7 @@
     </div>
 
     <div class="library-backdrop" id="library-backdrop" hidden></div>
-    <aside class="library" id="library" hidden>
+    <aside class="library" id="library" hidden aria-label="Resume library">
       <header class="library-head">
         <div>
           <h2>Library</h2>
@@ -129,6 +142,6 @@
       <ul class="library-list" id="library-list"></ul>
     </aside>
 
-    <script type="module" src="/static/app.js?v=20260818a"></script>
+    <script type="module" src="/static/app.js?v=20260818c"></script>
   </body>
 </html>
