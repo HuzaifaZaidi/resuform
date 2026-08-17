@@ -8,6 +8,8 @@ import sys
 import webbrowser
 from pathlib import Path
 
+from datetime import datetime, timezone
+
 from flask import Flask, Response, jsonify, request, send_file
 
 from gaconfig import inject_index
@@ -49,8 +51,14 @@ def index():
 
 @app.get("/ats")
 @app.get("/ats/")
+@app.get("/ats.html")
 def ats_page():
     return render_page("ats.html")
+
+
+@app.get("/api/ats/clock")
+def api_ats_clock():
+    return jsonify(current_date=datetime.now(timezone.utc).date().isoformat())
 
 
 @app.post("/api/ats/analyze")
@@ -82,6 +90,26 @@ def api_ats_analyze():
         return jsonify(error=str(exc)), 400
     except Exception:
         return jsonify(error="Could not analyze this resume."), 500
+
+
+@app.post("/api/ats/extract")
+def api_ats_extract():
+    from ats.pdfextract import PdfExtractError, extract_pdf
+    from ats.service import MAX_PDF_BYTES
+
+    try:
+        upload = request.files.get("resume")
+        if not upload or not upload.filename:
+            return jsonify(error="Choose a PDF first."), 400
+        data = upload.read()
+        if len(data) > MAX_PDF_BYTES:
+            return jsonify(error="PDF is too large. Please upload a file under 8 MB."), 400
+        meta = extract_pdf(data)
+        return jsonify(text=meta.get("text") or "")
+    except PdfExtractError as exc:
+        return jsonify(error=str(exc)), 400
+    except Exception:
+        return jsonify(error="Could not read this PDF."), 500
 
 
 @app.post("/api/compile")
@@ -128,6 +156,7 @@ def api_resume_pdf():
 def main() -> None:
     url = f"http://127.0.0.1:{PORT}/"
     print(f"ResuForm resume builder (Flask) -> {url}")
+    print(f"ATS Score -> {url}ats")
     print("The original stdlib server is still available: start.bat or python server.py")
     print("Typesetting uses a local TeX engine if installed, otherwise TeXLive.net.")
     try:

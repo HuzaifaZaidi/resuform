@@ -10,6 +10,11 @@ _STRUCT_KEYS = {
     "headline",
     "skills_text",
     "experience_text",
+    "internships_text",
+    "projects_text",
+    "education_text",
+    "roles",
+    "education",
     "has_contact",
     "has_summary",
     "has_education",
@@ -31,11 +36,37 @@ def _clean_structured(raw) -> dict | None:
         if key not in raw:
             continue
         value = raw[key]
-        if key == "experience_text" and isinstance(value, list):
+        if key in {"experience_text", "internships_text", "projects_text"} and isinstance(value, list):
             out[key] = [str(item)[:2000] for item in value[:20]]
-        elif key == "headline":
+        elif key == "roles" and isinstance(value, list):
+            cleaned = []
+            for item in value[:20]:
+                if not isinstance(item, dict):
+                    continue
+                cleaned.append(
+                    {
+                        "kind": str(item.get("kind") or "experience")[:20],
+                        "title": str(item.get("title") or "")[:80],
+                        "dates": str(item.get("dates") or "")[:40],
+                        "bullets": str(item.get("bullets") or "")[:2000],
+                    }
+                )
+            out[key] = cleaned
+        elif key == "education" and isinstance(value, list):
+            cleaned = []
+            for item in value[:12]:
+                if not isinstance(item, dict):
+                    continue
+                cleaned.append(
+                    {
+                        "degree": str(item.get("degree") or "")[:80],
+                        "dates": str(item.get("dates") or "")[:40],
+                    }
+                )
+            out[key] = cleaned
+        elif key in {"headline"}:
             out[key] = str(value)[:120]
-        elif key == "skills_text":
+        elif key in {"skills_text", "education_text"}:
             out[key] = str(value)[:4000]
         elif isinstance(value, bool):
             out[key] = value
@@ -58,13 +89,16 @@ def run_analysis(
         pdf_meta = extract_pdf(pdf_bytes)
         resume_text = pdf_meta["text"]
         structured = None
-    return analyze(
+    result = analyze(
         resume_text=resume_text,
         jd_text=jd_text,
         source=source,
         structured=_clean_structured(structured),
         pdf_meta=pdf_meta,
     )
+    # Used by optional browser-side Gemini analysis. Does not affect scoring.
+    result["extracted_resume_text"] = resume_text
+    return result
 
 
 __all__ = ["run_analysis", "PdfExtractError", "MAX_PDF_BYTES"]

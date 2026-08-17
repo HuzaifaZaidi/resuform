@@ -2,7 +2,7 @@ import { FORMAT_GUIDE, SAMPLE_TEXT, emptyResume } from "./sample.js"
 import { parseResumeText, serializeResume } from "./parse.js"
 import { generateLatex } from "./latex.js"
 import { renderPreview } from "./preview.js"
-import { blankText, loadLibrary, makeItem, saveLibrary, titleFromText, upsertCurrent } from "./library.js"
+import { blankText, loadLibrary, makeItem, renameItem, saveLibrary, titleFromText, upsertCurrent } from "./library.js"
 import { DEFAULT_ORDER, SECTION_DEFS, ensureResume, sectionDef } from "./sections.js"
 import {
   defaultMargins,
@@ -514,6 +514,27 @@ function showPdf(blob) {
   els.pdfEmpty.hidden = true
 }
 
+function pdfSafeText(text) {
+  return String(text || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\t\n\r\x20-\x7E]/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
+
+function addSearchableResumeText(pdf, text) {
+  const safe = pdfSafeText(text)
+  if (!safe) return
+  const pageW = pdf.internal.pageSize.getWidth()
+  pdf.setFont("helvetica", "normal")
+  pdf.setFontSize(9)
+  pdf.setTextColor(255, 255, 255)
+  const lines = pdf.splitTextToSize(safe, Math.max(120, pageW - 24))
+  pdf.text(lines.slice(0, 400), 12, 16)
+}
+
 async function pdfFromProof() {
   refreshPreview()
   if (document.fonts?.ready) await document.fonts.ready
@@ -565,6 +586,13 @@ async function pdfFromProof() {
       slice.height = Math.max(1, Math.round(sliceH))
       slice.getContext("2d").drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height)
       if (!first) pdf.addPage()
+      if (first) {
+        try {
+          addSearchableResumeText(pdf, state.text)
+        } catch {
+          /* visual PDF still works */
+        }
+      }
       first = false
       pdf.addImage(slice.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, pageW, slice.height * ratio, undefined, "FAST")
       y += pageHeightPx
@@ -676,6 +704,7 @@ function renderLibrary() {
         <time>${formatWhen(item.updatedAt)}</time>
         <div class="row-actions">
           <button type="button" data-open="${item.id}">Open</button>
+          <button type="button" data-rename="${item.id}">Rename</button>
           <button type="button" data-copy="${item.id}">Duplicate</button>
           <button type="button" data-delete="${item.id}">Delete</button>
         </div>
@@ -719,6 +748,7 @@ function saveCopy() {
     margins: state.margins,
     lineSpacing: state.lineSpacing,
     name: `${titleFromText(state.text)} copy`,
+    customName: true,
   })
   library.items.unshift(item)
   saveLibrary(library)
@@ -734,12 +764,28 @@ function duplicateResume(id) {
     ...source,
     id: "",
     name: `${source.name || titleFromText(source.text)} copy`,
+    customName: true,
   })
   library.items.unshift(item)
   saveLibrary(library)
   renderLibrary()
   setStatus(`Duplicated ${item.name}.`)
   trackEvent("resume_duplicated")
+}
+
+function renameResume(id) {
+  const item = library.items.find((entry) => entry.id === id)
+  if (!item) return
+  const current = item.name || titleFromText(item.text) || "Untitled resume"
+  const next = window.prompt("Rename this resume", current)
+  if (next == null) return
+  const renamed = renameItem(library, id, next)
+  if (!renamed) {
+    setStatus("Enter a name to rename this resume.")
+    return
+  }
+  renderLibrary()
+  setStatus(`Renamed to ${renamed.name}.`)
 }
 
 function deleteResume(id) {
@@ -930,6 +976,7 @@ function loadExample() {
     margins: state.margins,
     lineSpacing: state.lineSpacing,
     name: "Example resume",
+    customName: true,
   })
   library.items.unshift(item)
   applyItem(item, { save: true })
@@ -973,9 +1020,11 @@ els.resumeNew.addEventListener("click", newResume)
 els.resumeSave.addEventListener("click", saveCopy)
 els.libraryList.addEventListener("click", (event) => {
   const open = event.target.dataset.open
+  const rename = event.target.dataset.rename
   const copy = event.target.dataset.copy
   const remove = event.target.dataset.delete
   if (open) openResume(open)
+  if (rename) renameResume(rename)
   if (copy) duplicateResume(copy)
   if (remove) deleteResume(remove)
 })

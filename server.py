@@ -8,6 +8,7 @@ import os
 import sys
 import urllib.parse
 import webbrowser
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -62,6 +63,10 @@ class Handler(BaseHTTPRequestHandler):
     def _handle_get(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path == "/api/ats/clock":
+            body = json.dumps({"current_date": datetime.now(timezone.utc).date().isoformat()}).encode("utf-8")
+            self._send(200, body, "application/json")
+            return
         if path in ("/api/resume.pdf", "/resume.pdf"):
             with PDF_LOCK:
                 pdf = PDF_CACHE["bytes"]
@@ -116,6 +121,9 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length)
         if route == "/api/ats/analyze":
             self._ats_analyze(raw)
+            return
+        if route == "/api/ats/extract":
+            self._ats_extract(raw)
             return
         if route != "/api/compile":
             self._send(404, b"Not found", "text/plain")
@@ -173,6 +181,31 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, body, "application/json")
         except Exception:
             body = json.dumps({"error": "Could not analyze this resume."}).encode("utf-8")
+            self._send(500, body, "application/json")
+
+    def _ats_extract(self, raw: bytes) -> None:
+        from ats.httpparse import parse_multipart
+        from ats.pdfextract import PdfExtractError, extract_pdf
+        from ats.service import MAX_PDF_BYTES
+
+        try:
+            ctype = self.headers.get("Content-Type", "")
+            if "multipart/form-data" not in ctype:
+                raise ValueError("Choose a PDF first.")
+            _fields, files = parse_multipart(ctype, raw)
+            data = files.get("resume") or b""
+            if not data:
+                raise ValueError("Choose a PDF first.")
+            if len(data) > MAX_PDF_BYTES:
+                raise ValueError("PDF is too large. Please upload a file under 8 MB.")
+            meta = extract_pdf(data)
+            body = json.dumps({"text": meta.get("text") or ""}).encode("utf-8")
+            self._send(200, body, "application/json")
+        except (PdfExtractError, ValueError) as exc:
+            body = json.dumps({"error": str(exc) or "Could not read this PDF."}).encode("utf-8")
+            self._send(400, body, "application/json")
+        except Exception:
+            body = json.dumps({"error": "Could not read this PDF."}).encode("utf-8")
             self._send(500, body, "application/json")
 
 

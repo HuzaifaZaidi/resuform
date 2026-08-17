@@ -11,9 +11,14 @@ const ALLOWED_EVENTS = new Set([
   "pdf_downloaded",
   "latex_downloaded",
   "ats_analyzed",
+  "ats_analysis_started",
+  "ats_analysis_completed",
+  "ai_analysis_started",
+  "ai_analysis_completed",
+  "ai_analysis_failed",
 ])
 
-const ALLOWED_PARAMS = new Set(["template_name", "section_type", "section_count", "source_type", "score"])
+const ALLOWED_PARAMS = new Set(["template_name", "section_type", "section_count", "source_type", "score", "error_code"])
 
 function measurementId() {
   const raw = String(window.__GA_MEASUREMENT_ID__ || "").trim()
@@ -26,7 +31,9 @@ function safeParams(params) {
   for (const key of Object.keys(params)) {
     if (!ALLOWED_PARAMS.has(key)) continue
     const value = params[key]
-    if (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100) {
+    if (key === "error_code" && typeof value === "string" && /^[a-z_]{3,40}$/.test(value)) {
+      out[key] = value
+    } else if (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100) {
       out[key] = Math.round(value)
     } else if (typeof value === "string" && value.length > 0 && value.length <= 40 && !value.includes("@")) {
       out[key] = value

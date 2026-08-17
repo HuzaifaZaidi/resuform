@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=20260817a" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260817m" />
   </head>
   <body class="ats-body">
     <div class="app ats-app">
@@ -31,7 +31,8 @@
           <h1>Resuform ATS Score</h1>
           <p class="ats-lead">
             Compare a resume with a job description using Resuform’s own matching rules.
-            Nothing is sent to OpenAI, Gemini, or any other AI API.
+            The Resuform ATS Score is deterministic and is not sent to OpenAI, Gemini, or any other AI API.
+            Optional Gemini analysis can be run from this page with your own API key. The two analyses stay separate.
           </p>
 
           <div class="ats-grid">
@@ -50,7 +51,7 @@
                   Upload Resume PDF
                   <input id="ats-pdf" type="file" accept="application/pdf,.pdf" />
                 </label>
-                <p class="hint ats-hint" id="ats-pdf-name">PDF text is extracted on the Resuform server. Scanned image PDFs cannot be read.</p>
+                <p class="hint ats-hint" id="ats-pdf-name">PDF text is read in this browser, including image-only files. The first image PDF can take a minute.</p>
               </div>
             </div>
 
@@ -61,9 +62,76 @@
             </div>
           </div>
 
-          <div class="ats-actions">
-            <button class="btn-primary" id="ats-analyze" type="button" disabled>Analyze Resume</button>
-            <p class="status" id="ats-status">Choose a resume and paste a job description.</p>
+          <div class="ats-split ats-analyze-row">
+            <div class="ats-card">
+              <h2>3. Resuform ATS Score</h2>
+              <p class="ats-lead">Deterministic keyword and rule-based analysis. This does not use Gemini.</p>
+              <div class="ats-actions">
+                <button class="btn-primary" id="ats-analyze" type="button" disabled>Analyze Resume</button>
+                <p class="status" id="ats-status">Choose a resume and paste a job description.</p>
+              </div>
+            </div>
+            <div class="ats-card ats-ai" id="ats-ai">
+              <h2>AI Resume Analysis</h2>
+              <p class="ats-lead">Optional deeper semantic analysis using Gemini. Requires your own Gemini API key. This does not change the Resuform ATS Score.</p>
+              <p class="hint ats-hint">
+                Use your own Gemini API key. You can get a free key from
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
+                Gemini usage is subject to Google's current API quotas and pricing.
+              </p>
+              <label class="ats-label" for="ats-gemini-model">Gemini model</label>
+              <select id="ats-gemini-model"></select>
+              <p class="hint ats-hint">Flash and Flash-Lite models are usually free with an AI Studio key. Pro models are often paid. Google can change this.</p>
+              <label class="ats-label" for="ats-gemini-key">Gemini API Key</label>
+              <div class="ats-key-row">
+                <input id="ats-gemini-key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" />
+                <button class="btn-ghost" id="ats-gemini-toggle" type="button">Show</button>
+              </div>
+              <label class="ats-keep-key">
+                <input id="ats-gemini-keep" type="checkbox" />
+                Keep this key for this browser tab only (cleared when the tab is closed)
+              </label>
+              <div class="ats-actions">
+                <button class="btn-primary" id="ats-gemini-run" type="button" disabled>Analyze with Gemini</button>
+                <p class="status" id="ats-gemini-status">Gemini is not run automatically.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="ats-ai-results" hidden>
+            <p class="ats-kicker">AI Match Analysis</p>
+            <div class="ats-score-hero">
+              <div class="ats-score-num" id="ats-ai-score-num">—</div>
+              <div>
+                <h1>OVERALL ALIGNMENT</h1>
+                <p class="ats-disclaimer" id="ats-ai-disclaimer"></p>
+              </div>
+            </div>
+            <div class="ats-bars" id="ats-ai-bars"></div>
+            <div class="ats-split">
+              <div class="ats-card" id="ats-ai-strengths"></div>
+              <div class="ats-card" id="ats-ai-gaps"></div>
+            </div>
+            <div class="ats-card" id="ats-ai-semantic"></div>
+            <div class="ats-card" id="ats-ai-experience-gaps"></div>
+            <div class="ats-card" id="ats-ai-improvements"></div>
+            <div class="ats-card">
+              <h2>Requirement analysis</h2>
+              <table class="ats-table" id="ats-ai-req-table">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Importance</th>
+                    <th>Status</th>
+                    <th>Evidence type</th>
+                    <th>Reason</th>
+                    <th>Resume evidence</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="ats-evidence-legend">Matched needs a job or project description. A skills-list mention is marked Claimed — no supporting evidence, not Partially matched.</p>
+            </div>
           </div>
         </section>
 
@@ -80,25 +148,37 @@
 
           <div class="ats-split">
             <div class="ats-card">
-              <h2>Matched skills</h2>
+              <h2>Strong matches</h2>
               <div class="ats-chips" id="ats-matched"></div>
             </div>
             <div class="ats-card">
-              <h2>Potentially missing</h2>
+              <h2>Important gaps</h2>
               <div class="ats-chips missing" id="ats-missing"></div>
               <p class="ats-warning" id="ats-warning"></p>
             </div>
           </div>
 
           <div class="ats-card">
-            <h2>Required skills</h2>
+            <h2>Job requirements</h2>
             <table class="ats-table" id="ats-skill-table">
-              <thead><tr><th>Term</th><th>Match</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>Category</th>
+                  <th>Importance</th>
+                  <th>Match</th>
+                  <th>Evidence</th>
+                </tr>
+              </thead>
               <tbody></tbody>
             </table>
           </div>
 
-          <div class="ats-card" id="ats-requirements"></div>
+          <div class="ats-split">
+            <div class="ats-card" id="ats-strengths"></div>
+            <div class="ats-card" id="ats-improvements"></div>
+          </div>
+          <div class="ats-card" id="ats-experience"></div>
           <div class="ats-split">
             <div class="ats-card" id="ats-structure"></div>
             <div class="ats-card" id="ats-formatting"></div>
@@ -111,6 +191,6 @@
         </section>
       </main>
     </div>
-    <script type="module" src="/static/ats.js?v=20260817a"></script>
+    <script type="module" src="/static/ats.js?v=20260818b"></script>
   </body>
 </html>

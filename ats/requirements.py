@@ -28,11 +28,22 @@ def extract_years(text: str) -> int | None:
     return min(years) if years else None
 
 
-def extract_education(jd_text: str) -> str | None:
+def extract_education(jd_text: str) -> dict | None:
     hay = normalize(jd_text)
-    for label, needles in DEGREE_PATTERNS:
-        if any(has_phrase(hay, n) or n.strip() in hay for n in needles):
-            return label
+    has_phd = any(has_phrase(hay, n) or n.strip() in hay for n in ("phd", "ph.d", "doctorate", "doctoral"))
+    has_master = any(has_phrase(hay, n) or n.strip() in hay for n in ("master", "masters", "m.s", "m tech", "mtech", "mba", "msc"))
+    has_bachelor = any(has_phrase(hay, n) or n.strip() in hay for n in ("bachelor", "bachelors", "b.s", "b tech", "btech", "undergraduate"))
+    or_pair = bool(re.search(r"\b(?:bachelor|b\.?s|b\.?tech).{0,40}\bor\b.{0,40}(?:master|m\.?s|m\.?tech)\b", jd_text or "", re.I)) or bool(
+        re.search(r"\b(?:master|m\.?s|m\.?tech).{0,40}\bor\b.{0,40}(?:bachelor|b\.?s|b\.?tech)\b", jd_text or "", re.I)
+    )
+    if has_bachelor and has_master and or_pair:
+        return {"label": "Bachelor's or Master's degree", "min_rank": 1, "operator": "OR"}
+    if has_phd:
+        return {"label": "PhD / Doctorate", "min_rank": 3, "operator": "NONE"}
+    if has_master:
+        return {"label": "Master's degree", "min_rank": 2, "operator": "NONE"}
+    if has_bachelor:
+        return {"label": "Bachelor's degree", "min_rank": 1, "operator": "NONE"}
     return None
 
 
@@ -96,10 +107,10 @@ def requirements_from_jd(jd_text: str, resume_text: str, skill_rows: list[dict])
 
     education_items = []
     if education:
-        met = resume_level >= degree_rank(education)
+        met = resume_level >= int(education["min_rank"])
         education_items.append(
             {
-                "label": education,
+                "label": education["label"],
                 "status": "met" if met else "missing",
                 "detail": "Found a matching degree on the resume." if met else "No matching degree language was found on the resume.",
             }
@@ -151,5 +162,5 @@ def requirements_from_jd(jd_text: str, resume_text: str, skill_rows: list[dict])
         "tools": [as_req(r) for r in tools],
         "other": [as_req(r) for r in other],
         "years_required": years,
-        "education_required": education,
+        "education_required": education["label"] if education else None,
     }

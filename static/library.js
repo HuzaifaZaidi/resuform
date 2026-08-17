@@ -1,4 +1,4 @@
-const LIBRARY_KEY = "pica-library-v1"
+export const LIBRARY_KEY = "pica-library-v1"
 const DRAFT_KEY = "pica-resume-v1"
 
 export function titleFromText(text) {
@@ -56,12 +56,15 @@ export function makeItem({
   margins,
   lineSpacing = 1,
   name = "",
+  customName = false,
   id = "",
 } = {}) {
   const now = Date.now()
+  const label = String(name || "").trim() || titleFromText(text)
   return {
     id: id || crypto.randomUUID(),
-    name: name || titleFromText(text),
+    name: label,
+    customName: Boolean(customName) && Boolean(String(name || "").trim()),
     text,
     template,
     page,
@@ -74,26 +77,42 @@ export function makeItem({
 }
 
 export function upsertCurrent(lib, current) {
+  const index = lib.items.findIndex((entry) => entry.id === (current.id || ""))
+  const existing = index >= 0 ? lib.items[index] : null
+  const customName = Boolean(current.customName ?? existing?.customName)
+  const keptName = String(current.name || existing?.name || "").trim()
   const item = {
-    id: current.id || crypto.randomUUID(),
-    name: titleFromText(current.text),
+    id: current.id || existing?.id || crypto.randomUUID(),
+    name: customName && keptName ? keptName : titleFromText(current.text),
+    customName: customName && Boolean(keptName),
     text: current.text,
     template: current.template,
     page: current.page,
     photo: current.photo || "",
     margins: current.margins,
     lineSpacing: current.lineSpacing,
-    createdAt: current.createdAt || Date.now(),
+    createdAt: current.createdAt || existing?.createdAt || Date.now(),
     updatedAt: Date.now(),
   }
-  const index = lib.items.findIndex((entry) => entry.id === item.id)
   if (index >= 0) {
-    item.createdAt = lib.items[index].createdAt || item.createdAt
+    item.createdAt = existing.createdAt || item.createdAt
     lib.items[index] = item
   } else {
     lib.items.unshift(item)
   }
   lib.currentId = item.id
+  saveLibrary(lib)
+  return item
+}
+
+export function renameItem(lib, id, nextName) {
+  const item = lib.items.find((entry) => entry.id === id)
+  if (!item) return null
+  const name = String(nextName || "").trim().replace(/\s+/g, " ").slice(0, 80)
+  if (!name) return null
+  item.name = name
+  item.customName = true
+  item.updatedAt = Date.now()
   saveLibrary(lib)
   return item
 }
