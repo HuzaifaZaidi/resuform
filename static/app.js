@@ -163,14 +163,24 @@ function field(id, label, value, multiline = false) {
   return `<label>${label}${control}</label>`
 }
 
-function sectionBlock(title, tools, body, sectionId = "") {
-  const attr = sectionId ? ` data-section="${sectionId}"` : ""
-  return `<details class="field-group" open${attr}>
+const openSections = new Set(["personal"])
+
+function sectionBlock(title, tools, body, sectionId = "", blockId = "") {
+  const id = sectionId || blockId
+  const attr = [
+    sectionId ? `data-section="${sectionId}"` : "",
+    blockId ? `data-block="${blockId}"` : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+  const isOpen = openSections.has(id)
+  return `<details class="field-group"${isOpen ? " open" : ""}${attr ? ` ${attr}` : ""}>
     <summary>
       <span class="field-title">${title}</span>
-      <span class="field-tools" data-stop-toggle>${tools || ""}</span>
+      <span class="field-tools"${tools ? " data-stop-toggle" : ""}>${tools || ""}</span>
+      <span class="field-chevron" aria-hidden="true"></span>
     </summary>
-    ${body}
+    <div class="field-body">${body}</div>
   </details>`
 }
 
@@ -371,7 +381,9 @@ function renderFields() {
       <label>Photo
         <input type="file" id="photo-file" accept="image/*" />
       </label>
-      ${state.photo ? `<div class="photo-edit"><img src="${state.photo}" alt="Candidate photo" /><button type="button" id="photo-clear">Remove photo</button></div>` : `<p class="hint">Used by Modern (photo) and Two Column (photo). Pick a headshot, then switch to one of those templates.</p>`}`
+      ${state.photo ? `<div class="photo-edit"><img src="${state.photo}" alt="Candidate photo" /><button type="button" id="photo-clear">Remove photo</button></div>` : `<p class="hint">Used by Modern (photo) and Two Column (photo). Pick a headshot, then switch to one of those templates.</p>`}`,
+      "",
+      "personal"
     )}
     ${sectionBlock(
       "Formatting / layout",
@@ -382,7 +394,9 @@ function renderFields() {
           <option value="">Choose…</option>
           ${addOptions}
         </select>
-      </label>` : "<p class='hint'>All optional sections are on the resume.</p>"}`
+      </label>` : "<p class='hint'>All optional sections are on the resume.</p>"}`,
+      "",
+      "layout"
     )}
     ${order.map((id) => renderSectionFields(r, id)).join("")}
   `
@@ -409,6 +423,14 @@ function renderFields() {
     refreshPreview()
     renderFields()
   })
+  els.fields.querySelectorAll("details.field-group").forEach((group) => {
+    group.addEventListener("toggle", () => {
+      const id = group.dataset.section || group.dataset.block
+      if (!id) return
+      if (group.open) openSections.add(id)
+      else openSections.delete(id)
+    })
+  })
 }
 
 function setByPath(path, value) {
@@ -424,6 +446,7 @@ function setByPath(path, value) {
 function addItem(kind) {
   const id = crypto.randomUUID()
   ensureResume(state.resume)
+  if (kind) openSections.add(kind)
   if (kind === "education") {
     state.resume.education.push({ id, school: "", degree: "", location: "", dates: "", details: "", score: "" })
   } else if (kind === "projects") {
@@ -451,6 +474,7 @@ function moveSection(id, delta) {
 
 function addSection(id) {
   ensureResume(state.resume)
+  if (id) openSections.add(id)
   const order = state.resume.sectionOrder
   const added = !order.includes(id)
   if (added) {

@@ -523,9 +523,8 @@ function renderResults(data) {
         </li>`
       )
       .join("")}</ul>`
-  els.form.hidden = true
   els.results.hidden = false
-  window.scrollTo({ top: 0, behavior: "smooth" })
+  els.results.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
 async function analyze() {
@@ -577,6 +576,7 @@ async function analyze() {
     renderResults(data)
     trackEvent("ats_analysis_completed", { source_type: state.source, score: data.score })
     setStatus("Analysis complete.", "ok")
+    refreshReady()
   } catch (err) {
     setStatus(err.message || String(err), "error")
     els.analyze.disabled = false
@@ -606,7 +606,8 @@ els.jd.addEventListener("input", refreshReady)
 els.analyze.addEventListener("click", analyze)
 els.again.addEventListener("click", () => {
   els.results.hidden = true
-  els.form.hidden = false
+  resetAiPanel()
+  window.scrollTo({ top: 0, behavior: "smooth" })
   refreshReady()
 })
 

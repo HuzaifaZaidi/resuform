@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=20260818c" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260818e" />
     <script src="/static/vendor/html2canvas.min.js"></script>
     <script src="/static/vendor/jspdf.umd.min.js"></script>
   </head>
@@ -29,18 +29,24 @@
           <button class="nav-link" id="library-btn" type="button" title="Saved on this browser only. Not synced to an account.">Library</button>
         </nav>
         <div class="top-actions">
-          <select id="template" aria-label="Template">
-            <option value="classic">Classic</option>
-            <option value="modern">Modern</option>
-            <option value="compact">Compact</option>
-            <option value="two_column">Two Column</option>
-            <option value="modern_photo">Modern (photo)</option>
-            <option value="two_column_photo">Two Column (photo)</option>
-          </select>
-          <select id="page" aria-label="Paper size">
-            <option value="letter">Letter</option>
-            <option value="a4">A4</option>
-          </select>
+          <label class="toolbar-field">
+            <span>Template</span>
+            <select id="template" aria-label="Template">
+              <option value="classic">Classic</option>
+              <option value="modern">Modern</option>
+              <option value="compact">Compact</option>
+              <option value="two_column">Two Column</option>
+              <option value="modern_photo">Modern (photo)</option>
+              <option value="two_column_photo">Two Column (photo)</option>
+            </select>
+          </label>
+          <label class="toolbar-field">
+            <span>Paper</span>
+            <select id="page" aria-label="Paper size">
+              <option value="letter">Letter</option>
+              <option value="a4">A4</option>
+            </select>
+          </label>
           <details class="layout-pop" id="layout-pop">
             <summary>Layout</summary>
             <div class="layout-panel">
@@ -142,6 +148,6 @@
       <ul class="library-list" id="library-list"></ul>
     </aside>
 
-    <script type="module" src="/static/app.js?v=20260818c"></script>
+    <script type="module" src="/static/app.js?v=20260818d"></script>
   </body>
 </html>

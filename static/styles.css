@@ -112,7 +112,19 @@ button { cursor: pointer; }
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+}
+.toolbar-field {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+.toolbar-field > span {
+  white-space: nowrap;
 }
 
 .btn, .btn-ghost, .btn-primary, select, .layout-pop > summary {
@@ -334,12 +346,11 @@ a.btn, a.btn-ghost, a.btn-primary {
   min-height: 0;
   align-content: start;
 }
-.fields.open { display: grid; }
+.fields.open { display: grid; gap: 0; }
 
 .field-group {
-  display: grid;
-  gap: 10px;
-  padding: 12px 0 4px;
+  display: block;
+  padding: 0;
   border-bottom: 1px solid var(--line);
 }
 .field-group > summary {
@@ -348,9 +359,18 @@ a.btn, a.btn-ghost, a.btn-primary {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  padding: 11px 2px;
+  min-height: 38px;
 }
 .field-group > summary::-webkit-details-marker,
 .field-group > summary::marker { display: none; content: ""; }
+.field-group > summary:hover .field-title,
+.field-group > summary:hover .field-chevron {
+  color: var(--ink);
+}
+.field-group[open] > summary {
+  padding-bottom: 8px;
+}
 .field-title {
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -364,6 +384,36 @@ a.btn, a.btn-ghost, a.btn-primary {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+}
+.field-group:not([open]) .field-tools { display: none; }
+.field-chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin-left: 4px;
+  position: relative;
+  color: var(--ink-soft);
+}
+.field-group:not([open]) .field-chevron { margin-left: auto; }
+.field-chevron::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+.field-group[open] .field-chevron::before {
+  top: 7px;
+  transform: rotate(225deg);
+}
+.field-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 2px 14px;
 }
 .field-group h3 {
   margin: 0;
@@ -814,9 +864,10 @@ a.btn, a.btn-ghost, a.btn-primary {
 .ats-app { grid-template-rows: auto 1fr; }
 .ats-main {
   overflow: auto;
-  padding: 28px 20px 64px;
+  padding: 28px 24px 64px;
 }
-.ats-panel { max-width: 920px; margin: 0 auto; }
+.ats-panel { max-width: 1200px; margin: 0 auto; width: 100%; }
+.ats-panel + .ats-panel { margin-top: 28px; }
 .page-head { margin-bottom: 22px; }
 .page-head h1 {
   font-size: 28px;
@@ -829,7 +880,7 @@ a.btn, a.btn-ghost, a.btn-primary {
   color: var(--ink-soft);
   font-size: 14px;
   line-height: 1.5;
-  max-width: 42em;
+  max-width: none;
 }
 .ats-lead, .ats-disclaimer {
   color: var(--ink-soft);
@@ -837,6 +888,25 @@ a.btn, a.btn-ghost, a.btn-primary {
   line-height: 1.5;
   max-width: 46em;
   margin: 0 0 8px;
+}
+.ats-setup {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+.ats-setup > .ats-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ats-analyze-card {
+  margin-bottom: 12px;
+}
+.ats-analyze-card .ats-actions {
+  justify-content: center;
+  margin-top: 10px;
 }
 .step-list { display: grid; gap: 16px; }
 .ats-grid, .ats-split {
@@ -898,8 +968,9 @@ a.btn, a.btn-ghost, a.btn-primary {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 280px;
+  max-height: 360px;
   overflow: auto;
+  flex: 1;
 }
 .ats-library-list li {
   border: 1px solid var(--line);
@@ -943,7 +1014,7 @@ a.btn, a.btn-ghost, a.btn-primary {
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-#ats-jd { min-height: 220px; resize: vertical; }
+#ats-jd { min-height: 280px; flex: 1; resize: vertical; }
 .ats-file { display: block; font-size: 13px; }
 .ats-file input { margin-top: 8px; }
 .ats-actions {
@@ -1108,6 +1179,70 @@ a.btn, a.btn-ghost, a.btn-primary {
 
 .ats-analyze-row { margin-top: 16px; align-items: start; }
 .ats-ai { background: var(--bg); }
+.ats-ai-panel {
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 2px 16px;
+  margin: 0 0 20px;
+}
+.ats-ai-panel > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 0;
+}
+.ats-ai-panel > summary::-webkit-details-marker,
+.ats-ai-panel > summary::marker { display: none; content: ""; }
+.ats-ai-panel .ats-kicker { margin-bottom: 8px; }
+.ats-ai-enable {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-elev);
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  box-shadow: var(--shadow);
+}
+.ats-ai-enable::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+.ats-ai-panel > summary:hover .ats-ai-enable {
+  background: var(--bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ats-ai-panel[open] .ats-ai-enable {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.ats-ai-panel[open] .ats-ai-enable::after {
+  transform: rotate(225deg);
+  margin-top: 2px;
+}
+.ats-ai-panel summary em {
+  display: block;
+  margin-top: 8px;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.ats-ai-body {
+  max-width: 520px;
+  padding: 0 0 16px;
+}
 .ats-key-row {
   display: flex;
   gap: 8px;
@@ -1179,13 +1314,16 @@ a.btn, a.btn-ghost, a.btn-primary {
   }
   .preview { min-height: 72vh; }
   .grid-2 { grid-template-columns: 1fr; }
-  .ats-grid, .ats-split, .score-hero, .ats-score-hero {
+  .ats-grid, .ats-split, .score-hero, .ats-score-hero, .ats-setup {
     grid-template-columns: 1fr;
     display: grid;
   }
+  .ats-setup > .ats-card { min-height: 0; }
+  #ats-jd { min-height: 180px; }
+  .ats-library-list { max-height: 240px; }
   .brand span, .hide-sm { display: none; }
   .topbar { flex-wrap: wrap; padding: 8px 12px; }
-  .top-actions { width: 100%; margin-left: 0; }
+  .top-actions { width: 100%; margin-left: 0; justify-content: flex-start; }
 }
 @media (max-width: 390px) {
   .nav-link { padding: 6px 8px; }

@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,650;1,8..60,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=20260818c" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260818e" />
   </head>
   <body class="ats-body">
     <div class="app ats-app">
@@ -35,9 +35,9 @@
             <p>Optimize your resume for a specific job description. The Resuform ATS Score is deterministic and is not sent to Gemini or any other AI API.</p>
           </div>
 
-          <div class="step-list">
+          <div class="ats-setup">
             <div class="ats-card">
-              <span class="step">Step 1</span>
+              <span class="step">1. Resume</span>
               <h2>Choose resume</h2>
               <div class="ats-source-tabs" role="tablist">
                 <button type="button" class="active" data-source="library">Select from Resume Library</button>
@@ -57,26 +57,30 @@
             </div>
 
             <div class="ats-card">
-              <span class="step">Step 2</span>
+              <span class="step">2. Job description</span>
               <h2>Paste job description</h2>
               <label class="ats-label" for="ats-jd">Job description</label>
               <textarea id="ats-jd" rows="12" placeholder="Paste the complete job description here."></textarea>
             </div>
+          </div>
 
-            <div class="ats-card">
-              <span class="step">Step 3</span>
-              <h2>Analyze</h2>
-              <p class="ats-lead">Deterministic keyword and rule-based analysis. This does not use Gemini.</p>
-              <div class="ats-actions">
-                <button class="btn-primary" id="ats-analyze" type="button" disabled>Analyze Resume</button>
-                <p class="status" id="ats-status">Choose a resume and paste a job description.</p>
-              </div>
+          <div class="ats-card ats-analyze-card">
+            <span class="step">3. Analyze</span>
+            <h2>Analyze</h2>
+            <p class="ats-lead">Deterministic keyword and rule-based analysis. This does not use Gemini.</p>
+            <div class="ats-actions">
+              <button class="btn-primary" id="ats-analyze" type="button" disabled>Analyze Resume</button>
+              <p class="status" id="ats-status">Choose a resume and paste a job description.</p>
             </div>
+          </div>
 
-            <div class="ats-card ats-ai" id="ats-ai">
-              <span class="step">Optional</span>
-              <h2>AI analysis</h2>
-              <p class="ats-lead">Get deeper semantic feedback using Gemini. This is optional. The native ATS analysis works without it, and it does not change the Resuform ATS Score.</p>
+          <details class="ats-ai-panel" id="ats-ai">
+            <summary>
+              <span class="ats-kicker">Optional AI analysis</span>
+              <span class="ats-ai-enable">Enable AI Analysis</span>
+              <em>Get deeper semantic feedback using Gemini. The native ATS score works without this and does not change when you run AI analysis.</em>
+            </summary>
+            <div class="ats-ai-body">
               <p class="hint ats-hint">
                 Use your own Gemini API key. You can get a free key from
                 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
@@ -99,55 +103,7 @@
                 <p class="status" id="ats-gemini-status">Gemini is not run automatically.</p>
               </div>
             </div>
-          </div>
-
-          <div id="ats-ai-results" hidden>
-            <p class="ats-kicker">Optional AI Match Analysis</p>
-            <div class="score-hero" id="ats-ai-score-hero" data-tone="neutral">
-              <div class="score-ring" aria-hidden="true">
-                <svg viewBox="0 0 120 120">
-                  <circle class="score-track" cx="60" cy="60" r="52" />
-                  <circle class="score-value" id="ats-ai-score-ring" cx="60" cy="60" r="52" />
-                </svg>
-                <div class="score-label">
-                  <strong id="ats-ai-score-num">—</strong>
-                  <span>/ 100</span>
-                </div>
-              </div>
-              <div class="score-copy">
-                <h1>Overall alignment</h1>
-                <p class="score-band" id="ats-ai-score-band"></p>
-                <p class="ats-disclaimer" id="ats-ai-disclaimer"></p>
-              </div>
-            </div>
-            <div class="ats-bars" id="ats-ai-bars"></div>
-            <div class="ats-split">
-              <div class="ats-card" id="ats-ai-strengths"></div>
-              <div class="ats-card" id="ats-ai-gaps"></div>
-            </div>
-            <div class="ats-card" id="ats-ai-semantic"></div>
-            <div class="ats-card" id="ats-ai-experience-gaps"></div>
-            <div class="ats-card" id="ats-ai-improvements"></div>
-            <div class="ats-card">
-              <h2>Requirement analysis</h2>
-              <div class="table-wrap">
-                <table class="ats-table" id="ats-ai-req-table">
-                  <thead>
-                    <tr>
-                      <th>Requirement</th>
-                      <th>Importance</th>
-                      <th>Status</th>
-                      <th>Evidence type</th>
-                      <th>Reason</th>
-                      <th>Resume evidence</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-              <p class="ats-evidence-legend">Matched needs a job or project description. A skills-list mention is marked Claimed — no supporting evidence, not Partially matched.</p>
-            </div>
-          </div>
+          </details>
         </section>
 
         <section class="ats-panel" id="ats-results" hidden>
@@ -216,8 +172,56 @@
             <a class="btn" href="/">Return to resume builder</a>
           </div>
         </section>
+
+        <div class="ats-panel" id="ats-ai-results" hidden>
+          <p class="ats-kicker">Optional AI Match Analysis</p>
+          <div class="score-hero" id="ats-ai-score-hero" data-tone="neutral">
+            <div class="score-ring" aria-hidden="true">
+              <svg viewBox="0 0 120 120">
+                <circle class="score-track" cx="60" cy="60" r="52" />
+                <circle class="score-value" id="ats-ai-score-ring" cx="60" cy="60" r="52" />
+              </svg>
+              <div class="score-label">
+                <strong id="ats-ai-score-num">—</strong>
+                <span>/ 100</span>
+              </div>
+            </div>
+            <div class="score-copy">
+              <h1>Overall alignment</h1>
+              <p class="score-band" id="ats-ai-score-band"></p>
+              <p class="ats-disclaimer" id="ats-ai-disclaimer"></p>
+            </div>
+          </div>
+          <div class="ats-bars" id="ats-ai-bars"></div>
+          <div class="ats-split">
+            <div class="ats-card" id="ats-ai-strengths"></div>
+            <div class="ats-card" id="ats-ai-gaps"></div>
+          </div>
+          <div class="ats-card" id="ats-ai-semantic"></div>
+          <div class="ats-card" id="ats-ai-experience-gaps"></div>
+          <div class="ats-card" id="ats-ai-improvements"></div>
+          <div class="ats-card">
+            <h2>Requirement analysis</h2>
+            <div class="table-wrap">
+              <table class="ats-table" id="ats-ai-req-table">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Importance</th>
+                    <th>Status</th>
+                    <th>Evidence type</th>
+                    <th>Reason</th>
+                    <th>Resume evidence</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="ats-evidence-legend">Matched needs a job or project description. A skills-list mention is marked Claimed — no supporting evidence, not Partially matched.</p>
+          </div>
+        </div>
       </main>
     </div>
-    <script type="module" src="/static/ats.js?v=20260818c"></script>
+    <script type="module" src="/static/ats.js?v=20260818d"></script>
   </body>
 </html>
