@@ -6,9 +6,12 @@ import { blankText, loadLibrary, makeItem, renameItem, saveLibrary, titleFromTex
 import { DEFAULT_ORDER, SECTION_DEFS, ensureResume, sectionDef } from "./sections.js"
 import {
   defaultMargins,
+  defaultPaperSize,
   marginsMatchTemplate,
   normalizeLineSpacing,
   normalizeMargins,
+  normalizePaperSize,
+  pageFromSize,
 } from "./layout.js"
 import { initAnalytics, trackEvent } from "./analytics.js"
 
@@ -36,6 +39,8 @@ const els = {
   marginRight: document.getElementById("margin-right"),
   marginBottom: document.getElementById("margin-bottom"),
   marginLeft: document.getElementById("margin-left"),
+  paperWidth: document.getElementById("paper-width"),
+  paperHeight: document.getElementById("paper-height"),
   lineSpacing: document.getElementById("line-spacing"),
   typeset: document.getElementById("typeset"),
   downloadPdf: document.getElementById("download-pdf"),
@@ -62,6 +67,7 @@ const state = {
   page: "letter",
   photo: "",
   margins: defaultMargins("classic"),
+  paperSize: defaultPaperSize("letter"),
   lineSpacing: 1,
   pdfUrl: "",
   pdfBlob: null,
@@ -82,6 +88,7 @@ function attachLayout(resume) {
   resume.page = state.page
   resume.photo = state.photo
   resume.margins = state.margins
+  resume.paperSize = state.paperSize
   resume.lineSpacing = state.lineSpacing
   return resume
 }
@@ -96,7 +103,10 @@ function syncLayoutInputs() {
   els.marginRight.value = state.margins.right
   els.marginBottom.value = state.margins.bottom
   els.marginLeft.value = state.margins.left
+  if (els.paperWidth) els.paperWidth.value = state.paperSize.width
+  if (els.paperHeight) els.paperHeight.value = state.paperSize.height
   els.lineSpacing.value = state.lineSpacing
+  if (els.page) els.page.value = state.page === "a4" || state.page === "custom" ? state.page : "letter"
 }
 
 function readLayoutFromForm() {
@@ -109,6 +119,14 @@ function readLayoutFromForm() {
     },
     state.template
   )
+  state.paperSize = normalizePaperSize(
+    {
+      width: els.paperWidth?.value,
+      height: els.paperHeight?.value,
+    },
+    state.page
+  )
+  state.page = pageFromSize(state.paperSize, state.page)
   state.lineSpacing = normalizeLineSpacing(els.lineSpacing.value)
   syncLayoutInputs()
 }
@@ -138,6 +156,7 @@ function persist() {
     page: state.page,
     photo: state.photo,
     margins: state.margins,
+    paperSize: state.paperSize,
     lineSpacing: state.lineSpacing,
     createdAt: state.createdAt,
   })
@@ -150,6 +169,7 @@ function persist() {
       page: state.page,
       photo: state.photo,
       margins: state.margins,
+      paperSize: state.paperSize,
       lineSpacing: state.lineSpacing,
     })
   )
@@ -354,6 +374,53 @@ function renderSectionFields(r, id) {
       id
     )
   }
+  if (def.kind === "coursework") {
+    const rows = (r.coursework || [])
+      .map(
+        (item, i) => `<div class="card">
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.category || item.items || `Course group ${i + 1}`)}</strong></div>
+          <button type="button" data-remove="coursework:${i}">Remove</button>
+        </div>
+        <div class="grid-2">
+          ${field(`coursework.${i}.category`, "Group (optional)", item.category)}
+          ${field(`coursework.${i}.items`, "Courses", item.items)}
+        </div>
+      </div>`
+      )
+      .join("")
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="coursework">Add</button> ${sectionChrome(id, `<button type="button" data-drop-section="${id}">Remove</button>`)}`,
+      rows || "<p class='hint'>No coursework yet.</p>",
+      id
+    )
+  }
+  if (def.kind === "certs") {
+    const rows = (r.onlineCerts || [])
+      .map(
+        (item, i) => `<div class="card">
+        <div class="card-head">
+          <div><strong>${escapeAttr(item.name || `Certification ${i + 1}`)}</strong>${item.issuer ? `<em>${escapeAttr(item.issuer)}</em>` : ""}</div>
+          <button type="button" data-remove="onlineCerts:${i}">Remove</button>
+        </div>
+        <div class="grid-2">
+          ${field(`onlineCerts.${i}.name`, "Name", item.name)}
+          ${field(`onlineCerts.${i}.issuer`, "Issuer", item.issuer)}
+          ${field(`onlineCerts.${i}.dates`, "Date", item.dates)}
+          ${field(`onlineCerts.${i}.link`, "Credential URL", item.link)}
+        </div>
+        ${field(`onlineCerts.${i}.details`, "Details (one per line)", item.details, true)}
+      </div>`
+      )
+      .join("")
+    return sectionBlock(
+      def.label,
+      `<button type="button" data-add="onlineCerts">Add</button> ${sectionChrome(id, `<button type="button" data-drop-section="${id}">Remove</button>`)}`,
+      rows || "<p class='hint'>No certifications yet.</p>",
+      id
+    )
+  }
   return ""
 }
 
@@ -388,7 +455,7 @@ function renderFields() {
     ${sectionBlock(
       "Formatting / layout",
       "",
-      `<p class="hint">Use Up/Down on each section, or add Internships, Fieldwork, POR, Extra Curricular. Template, paper size, and margins are in the header.</p>
+      `<p class="hint">Use Up/Down on each section, or add Internships, Fieldwork, POR, Extra Curricular, Relevant Coursework, and Online Certifications. Template, paper size, and margins are in the header.</p>
       ${addOptions ? `<label>Add section
         <select id="add-section">
           <option value="">Choose…</option>
@@ -453,6 +520,12 @@ function addItem(kind) {
     state.resume.projects.push({ id, name: "", tech: "", link: "", dates: "", bullets: "" })
   } else if (kind === "skills") {
     state.resume.skills.push({ id, category: "", items: "" })
+  } else if (kind === "coursework") {
+    if (!Array.isArray(state.resume.coursework)) state.resume.coursework = []
+    state.resume.coursework.push({ id, category: "", items: "" })
+  } else if (kind === "onlineCerts") {
+    if (!Array.isArray(state.resume.onlineCerts)) state.resume.onlineCerts = []
+    state.resume.onlineCerts.push({ id, name: "", issuer: "", dates: "", link: "", details: "" })
   } else if (["experience", "internships", "fieldwork", "responsibilities", "extracurricular"].includes(kind)) {
     if (!Array.isArray(state.resume[kind])) state.resume[kind] = []
     state.resume[kind].push({ id, company: "", title: "", location: "", dates: "", bullets: "" })
@@ -480,16 +553,18 @@ function addSection(id) {
   if (added) {
     const after = {
       internships: order.includes("education") ? "education" : "",
+      coursework: order.includes("education") ? "education" : "",
       fieldwork: order.includes("internships") ? "internships" : order.includes("education") ? "education" : "",
       responsibilities: order.includes("experience") ? "experience" : "",
       extracurricular: order.includes("projects") ? "projects" : "",
+      onlineCerts: order.includes("skills") ? "skills" : "",
     }[id]
     const at = after ? order.indexOf(after) + 1 : order.indexOf("skills")
     if (at >= 0) order.splice(at, 0, id)
     else order.push(id)
   }
   const def = sectionDef(id)
-  if (def?.kind === "roles" && !state.resume[id]?.length) addItem(id)
+  if ((def?.kind === "roles" || def?.kind === "coursework" || def?.kind === "certs") && !state.resume[id]?.length) addItem(id)
   else syncFromFields()
   if (added) trackEvent("section_added", { section_type: id })
 }
@@ -499,7 +574,7 @@ function dropSection(id) {
   const def = sectionDef(id)
   if (def?.core) return
   state.resume.sectionOrder = state.resume.sectionOrder.filter((item) => item !== id)
-  if (def?.kind === "roles") state.resume[id] = []
+  if (def?.kind === "roles" || def?.kind === "coursework" || def?.kind === "certs") state.resume[id] = []
   syncFromFields()
 }
 
@@ -587,6 +662,34 @@ function addSearchableResumeText(pdf, text) {
   pdf.text(lines.slice(0, 400), 12, 16)
 }
 
+function rowInk(canvas, y) {
+  const row = Math.max(0, Math.min(canvas.height - 1, Math.round(y)))
+  const data = canvas.getContext("2d").getImageData(0, row, canvas.width, 1).data
+  let ink = 0
+  for (let i = 0; i < data.length; i += 16) {
+    if (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 240) ink += 1
+  }
+  return ink
+}
+
+function findPageBreak(canvas, fromY, idealY) {
+  const maxY = canvas.height
+  const target = Math.min(Math.round(idealY), maxY)
+  if (target >= maxY - 1) return maxY
+  const minY = Math.max(fromY + 80, Math.round(fromY + (idealY - fromY) * 0.72))
+  let best = target
+  let bestInk = Infinity
+  for (let y = target; y >= minY; y -= 1) {
+    const ink = rowInk(canvas, y)
+    if (ink < bestInk) {
+      bestInk = ink
+      best = y
+      if (ink === 0) break
+    }
+  }
+  return Math.max(fromY + 1, best)
+}
+
 async function pdfFromProof() {
   refreshPreview()
   if (document.fonts?.ready) await document.fonts.ready
@@ -623,16 +726,31 @@ async function pdfFromProof() {
         h: box.height,
       }
     })
-    const format = state.page === "a4" ? "a4" : "letter"
-    const pdf = new JsPDF({ unit: "pt", format, compress: true })
+    const size = normalizePaperSize(state.paperSize, state.page)
+    const pdf = new JsPDF({
+      unit: "pt",
+      format: [size.width * 72, size.height * 72],
+      compress: true,
+    })
     const pageW = pdf.internal.pageSize.getWidth()
     const pageH = pdf.internal.pageSize.getHeight()
     const ratio = pageW / canvas.width
     const pageHeightPx = pageH / ratio
-    let y = 0
+    const breaks = [0]
+    let cursor = 0
+    while (cursor < canvas.height - 0.5) {
+      const remaining = canvas.height - cursor
+      if (remaining <= pageHeightPx + 1) {
+        breaks.push(canvas.height)
+        break
+      }
+      breaks.push(findPageBreak(canvas, cursor, cursor + pageHeightPx))
+      cursor = breaks[breaks.length - 1]
+    }
     let first = true
-    while (y < canvas.height - 0.5) {
-      const sliceH = Math.min(pageHeightPx, canvas.height - y)
+    for (let i = 0; i < breaks.length - 1; i += 1) {
+      const y = breaks[i]
+      const sliceH = breaks[i + 1] - y
       const slice = document.createElement("canvas")
       slice.width = canvas.width
       slice.height = Math.max(1, Math.round(sliceH))
@@ -647,28 +765,31 @@ async function pdfFromProof() {
       }
       first = false
       pdf.addImage(slice.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, pageW, slice.height * ratio, undefined, "FAST")
-      y += pageHeightPx
     }
     const scale = canvas.width / root.width
-    const pageHeightCss = pageHeightPx / scale
     for (const link of links) {
       if (!link.url || link.url.startsWith("javascript:") || link.w < 1 || link.h < 1) continue
       let top = link.y
       let remain = link.h
       while (remain > 0.5) {
-        const pageIndex = Math.max(0, Math.floor(top / pageHeightCss))
-        const yOnPage = top - pageIndex * pageHeightCss
-        const hOnPage = Math.min(remain, pageHeightCss - yOnPage)
+        const topPx = top * scale
+        let pageIndex = breaks.findIndex((b, idx) => idx < breaks.length - 1 && topPx >= b && topPx < breaks[idx + 1])
+        if (pageIndex < 0) pageIndex = Math.max(0, breaks.length - 2)
+        const pageTop = breaks[pageIndex]
+        const pageSpan = Math.max(1, breaks[pageIndex + 1] - pageTop)
+        const yOnPagePx = topPx - pageTop
+        const hOnPagePx = Math.min(remain * scale, pageSpan - yOnPagePx)
         pdf.setPage(pageIndex + 1)
         pdf.link(
           (link.x / root.width) * pageW,
-          (yOnPage / pageHeightCss) * pageH,
+          (yOnPagePx / pageSpan) * (pageSpan * ratio),
           (link.w / root.width) * pageW,
-          (hOnPage / pageHeightCss) * pageH,
+          (hOnPagePx / pageSpan) * (pageSpan * ratio),
           { url: link.url }
         )
-        top += hOnPage
-        remain -= hOnPage
+        const hOnPageCss = hOnPagePx / scale
+        top += hOnPageCss
+        remain -= hOnPageCss
       }
     }
     return pdf.output("blob")
@@ -727,6 +848,8 @@ function applyItem(item, { save = false } = {}) {
   state.page = item.page || "letter"
   state.photo = item.photo || ""
   state.margins = normalizeMargins(item.margins, state.template)
+  state.paperSize = normalizePaperSize(item.paperSize, item.page || "letter")
+  state.page = pageFromSize(state.paperSize, item.page || "letter")
   state.lineSpacing = normalizeLineSpacing(item.lineSpacing)
   state.dirty = true
   state.pdfBlob = null
@@ -805,6 +928,7 @@ function saveCopy() {
     page: state.page,
     photo: state.photo,
     margins: state.margins,
+    paperSize: state.paperSize,
     lineSpacing: state.lineSpacing,
     name: `${titleFromText(state.text)} copy`,
     customName: true,
@@ -903,8 +1027,16 @@ els.template.addEventListener("change", () => {
 })
 
 els.page.addEventListener("change", () => {
-  state.page = els.page.value
+  const next = els.page.value
+  if (next === "letter" || next === "a4") {
+    state.paperSize = defaultPaperSize(next)
+    state.page = next
+  } else {
+    state.page = "custom"
+    state.paperSize = normalizePaperSize(state.paperSize, "custom")
+  }
   state.dirty = true
+  syncLayoutInputs()
   persist()
   refreshPreview()
 })
@@ -914,9 +1046,15 @@ function onLayoutInput() {
   const right = Number(els.marginRight.value)
   const bottom = Number(els.marginBottom.value)
   const left = Number(els.marginLeft.value)
+  const width = Number(els.paperWidth?.value)
+  const height = Number(els.paperHeight?.value)
   const spacing = Number(els.lineSpacing.value)
   if (![top, right, bottom, left, spacing].every(Number.isFinite)) return
   state.margins = normalizeMargins({ top, right, bottom, left }, state.template)
+  if (Number.isFinite(width) && Number.isFinite(height)) {
+    state.paperSize = normalizePaperSize({ width, height }, state.page)
+    state.page = pageFromSize(state.paperSize, state.page)
+  }
   state.lineSpacing = normalizeLineSpacing(spacing)
   state.dirty = true
   persist()
@@ -930,7 +1068,7 @@ function onLayoutChange() {
   refreshPreview()
 }
 
-;[els.marginTop, els.marginRight, els.marginBottom, els.marginLeft, els.lineSpacing].forEach((input) => {
+;[els.marginTop, els.marginRight, els.marginBottom, els.marginLeft, els.paperWidth, els.paperHeight, els.lineSpacing].forEach((input) => {
   input?.addEventListener("input", onLayoutInput)
   input?.addEventListener("change", onLayoutChange)
 })
@@ -962,12 +1100,12 @@ els.fields.addEventListener("input", (event) => {
 
 els.fields.addEventListener("click", (event) => {
   if (event.target.closest("[data-stop-toggle]")) event.preventDefault()
-  const add = event.target.dataset.add
-  const remove = event.target.dataset.remove
-  const layout = event.target.dataset.eduLayout
-  const skillsLayout = event.target.dataset.skillsLayout
-  const move = event.target.dataset.move
-  const drop = event.target.dataset.dropSection
+  const add = event.target.closest("[data-add]")?.dataset.add
+  const remove = event.target.closest("[data-remove]")?.dataset.remove
+  const layout = event.target.closest("[data-edu-layout]")?.dataset.eduLayout
+  const skillsLayout = event.target.closest("[data-skills-layout]")?.dataset.skillsLayout
+  const move = event.target.closest("[data-move]")?.dataset.move
+  const drop = event.target.closest("[data-drop-section]")?.dataset.dropSection
   if (skillsLayout) {
     state.resume.skillsLayout = skillsLayout
     syncFromFields()
@@ -1034,6 +1172,7 @@ function loadExample() {
     template: state.template,
     page: state.page,
     margins: state.margins,
+    paperSize: state.paperSize,
     lineSpacing: state.lineSpacing,
     name: "Example resume",
     customName: true,

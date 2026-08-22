@@ -116,10 +116,18 @@ SKILLS
 COLUMNS
 Category: item, item, item
 
+RELEVANT COURSEWORK
+Core: Data Structures, Algorithms, Operating Systems
+Electives: Machine Learning, Compilers
+
+ONLINE CERTIFICATIONS
+AWS Cloud Practitioner | Amazon | credential-url | 2024
+- Optional detail
+
 ORDER
 education, internships, experience, projects, skills
 
-Use Up/Down in Fields, or an ORDER line, to rearrange sections. Internships, Fieldwork, Positions of Responsibility, and Extra Curricular are optional.
+Use Up/Down in Fields, or an ORDER line, to rearrange sections. Internships, Fieldwork, Positions of Responsibility, Extra Curricular, Relevant Coursework, and Online Certifications are optional.
 
 BOLD
 Wrap any keyword in double asterisks: **Python**, **query planner**`
@@ -142,9 +150,11 @@ export function emptyResume() {
     fieldwork: [],
     responsibilities: [],
     extracurricular: [],
+    coursework: [],
     projects: [],
     skills: [],
     skillsLayout: "list",
+    onlineCerts: [],
     sectionOrder: [...DEFAULT_ORDER],
   }
 }

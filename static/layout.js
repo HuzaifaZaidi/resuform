@@ -7,6 +7,11 @@ const TEMPLATE_MARGIN = {
   two_column_photo: 0.48,
 }
 
+export const PAPER_PRESETS = {
+  letter: { width: 8.5, height: 11 },
+  a4: { width: 8.27, height: 11.69 },
+}
+
 function clamp(value, min, max, fallback) {
   const n = Number(value)
   if (!Number.isFinite(n)) return fallback
@@ -33,6 +38,28 @@ export function normalizeLineSpacing(raw) {
   return clamp(raw, 0.8, 1.8, 1)
 }
 
+export function defaultPaperSize(page = "letter") {
+  return { ...(PAPER_PRESETS[page] || PAPER_PRESETS.letter) }
+}
+
+export function normalizePaperSize(raw, page = "letter") {
+  const fallback = defaultPaperSize(page)
+  const src = raw && typeof raw === "object" ? raw : {}
+  return {
+    width: clamp(src.width, 7, 14, fallback.width),
+    height: clamp(src.height, 8, 20, fallback.height),
+  }
+}
+
+export function pageFromSize(size, page = "letter") {
+  const s = normalizePaperSize(size, page)
+  const letter = PAPER_PRESETS.letter
+  const a4 = PAPER_PRESETS.a4
+  if (Math.abs(s.width - letter.width) < 0.02 && Math.abs(s.height - letter.height) < 0.02) return "letter"
+  if (Math.abs(s.width - a4.width) < 0.03 && Math.abs(s.height - a4.height) < 0.03) return "a4"
+  return "custom"
+}
+
 export function marginsMatchTemplate(margins, template) {
   const expected = defaultMargins(template)
   const actual = normalizeMargins(margins, template)
@@ -41,7 +68,8 @@ export function marginsMatchTemplate(margins, template) {
 
 export function geometryPackage(resume, template = "classic") {
   const m = normalizeMargins(resume?.margins, template)
-  return `\\usepackage[top=${m.top}in,bottom=${m.bottom}in,left=${m.left}in,right=${m.right}in]{geometry}`
+  const s = normalizePaperSize(resume?.paperSize, resume?.page)
+  return `\\usepackage[paperwidth=${s.width}in,paperheight=${s.height}in,top=${m.top}in,bottom=${m.bottom}in,left=${m.left}in,right=${m.right}in]{geometry}`
 }
 
 export function spacingCommands(resume) {
@@ -52,5 +80,6 @@ export function spacingCommands(resume) {
 export function proofPageStyle(resume, template = "classic") {
   const m = normalizeMargins(resume?.margins, template)
   const v = normalizeLineSpacing(resume?.lineSpacing)
-  return `padding: ${m.top}in ${m.right}in ${m.bottom}in ${m.left}in; line-height: ${(1.25 * v).toFixed(3)};`
+  const s = normalizePaperSize(resume?.paperSize, resume?.page)
+  return `width: ${s.width}in; min-height: ${s.height}in; padding: ${m.top}in ${m.right}in ${m.bottom}in ${m.left}in; line-height: ${(1.25 * v).toFixed(3)};`
 }

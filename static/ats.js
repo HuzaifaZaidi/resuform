@@ -143,7 +143,10 @@ function structuredFromText(text) {
     experience_text: experienceItems.map((item) => [item.title, item.bullets].filter(Boolean).join(" ")),
     internships_text: internships.map((item) => [item.title, item.bullets].filter(Boolean).join(" ")),
     projects_text: projects.map((item) => [item.name, item.tech, item.bullets].filter(Boolean).join(" ")),
-    education_text: (resume.education || []).map((item) => [item.degree, item.details].filter(Boolean).join(" ")).join(" "),
+    education_text: [
+      ...(resume.education || []).map((item) => [item.degree, item.details].filter(Boolean).join(" ")),
+      ...(resume.coursework || []).map((item) => [item.category, item.items].filter(Boolean).join(" ")),
+    ].join(" "),
     roles: [...mapRoles(experienceItems, "experience"), ...mapRoles(internships, "internship")],
     education: (resume.education || []).map((item) => ({ degree: item.degree || "", dates: item.dates || "" })),
     has_contact: Boolean(resume.email || resume.phone),
@@ -155,7 +158,8 @@ function structuredFromText(text) {
     has_skills: Boolean(resume.skills?.length),
     has_responsibilities: Boolean(resume.responsibilities?.length),
     has_extracurricular: Boolean(resume.extracurricular?.length),
-    has_certifications: /certif/i.test(text),
+    has_coursework: Boolean(resume.coursework?.length),
+    has_certifications: Boolean(resume.onlineCerts?.length) || /certif/i.test(text),
   }
 }
 

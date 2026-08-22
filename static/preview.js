@@ -231,6 +231,32 @@ export function renderPreview(resume, template = "classic") {
     },
     projects: () => (projects ? `<section><h2>Projects</h2>${projects}</section>` : ""),
     skills: () => (skills ? `<section><h2>Technical Skills</h2>${skills}</section>` : ""),
+    coursework: () => {
+      const rows = (resume.coursework || []).filter((s) => s.category || s.items)
+      if (!rows.length) return ""
+      const html = rows
+        .map((s) =>
+          s.category
+            ? `<div class="skill"><strong>${formatHtml(s.category)}:</strong> ${formatHtml(s.items)}</div>`
+            : `<div class="skill">${formatHtml(s.items)}</div>`
+        )
+        .join("")
+      return `<section><h2>Relevant Coursework</h2>${html}</section>`
+    },
+    onlineCerts: () => {
+      const html = (resume.onlineCerts || [])
+        .filter((c) => c.name || c.issuer)
+        .map((c) => {
+          const title = c.link ? linkify(c.link, c.name || c.link) : formatHtml(c.name)
+          const issuer = c.issuer ? `<span class="sep">|</span><em>${formatHtml(c.issuer)}</em>` : ""
+          return `<article>
+        <div class="row"><span><strong>${title}</strong>${issuer}</span><span>${formatHtml(c.dates)}</span></div>
+        ${bullets(c.details)}
+      </article>`
+        })
+        .join("")
+      return html ? `<section><h2>Online Certifications</h2>${html}</section>` : ""
+    },
   }
 
   let content

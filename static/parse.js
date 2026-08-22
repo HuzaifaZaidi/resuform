@@ -221,14 +221,39 @@ function parseSkills(lines) {
   for (const raw of lines) {
     const line = raw.trim()
     if (!line || isColumnsMarker(line)) continue
-    const labeled = line.match(/^([^:]{1,40}):\s*(.+)$/)
-    if (labeled) {
+    const labeled = line.match(/^([^:]{0,40}):\s*(.*)$/)
+    if (labeled && line.includes(":")) {
       skills.push({ id: uid(), category: labeled[1].trim(), items: labeled[2].trim() })
     } else {
       skills.push({ id: uid(), category: skills.length ? "Other" : "Skills", items: line.replace(/^[-•*]\s*/, "") })
     }
   }
   return skills
+}
+
+function parseCerts(lines) {
+  return parseBulletedBlock(lines).map((entry) => {
+    const parts = splitPipes(entry.header)
+    let name = parts[0] || ""
+    let issuer = parts[1] || ""
+    let link = ""
+    let dates = ""
+    if (parts.length >= 4) {
+      link = parts[2]
+      dates = parts[3]
+    } else if (parts.length === 3) {
+      if (/github|\.com|https?:/i.test(parts[2])) link = parts[2]
+      else dates = parts[2]
+    }
+    return {
+      id: uid(),
+      name,
+      issuer,
+      link,
+      dates,
+      details: entry.bullets.join("\n"),
+    }
+  })
 }
 
 function parseSkillsBlock(lines) {
@@ -317,6 +342,12 @@ export function parseResumeText(text) {
         resume.skillsLayout = parsed.layout
         break
       }
+      case "coursework":
+        resume.coursework = parseSkills(body)
+        break
+      case "onlineCerts":
+        resume.onlineCerts = parseCerts(body)
+        break
       default:
         break
     }
@@ -419,6 +450,24 @@ export function serializeResume(resume) {
       push("SKILLS")
       if (resume.skillsLayout === "columns") push("COLUMNS")
       resume.skills.forEach((item) => push(`${item.category}: ${item.items}`))
+    },
+    coursework() {
+      if (!resume.coursework?.length) return
+      push("RELEVANT COURSEWORK")
+      resume.coursework.forEach((item) => push(`${item.category || ""}: ${item.items || ""}`))
+      push("")
+    },
+    onlineCerts() {
+      if (!resume.onlineCerts?.length) return
+      push("ONLINE CERTIFICATIONS")
+      resume.onlineCerts.forEach((item, i) => {
+        push(joinPipes([item.name, item.issuer, item.link, item.dates].filter((p, idx) => idx < 2 || p)))
+        if (item.details) {
+          item.details.split("\n").filter(Boolean).forEach((b) => push(b.startsWith("-") ? b : `- ${b}`))
+        }
+        if (i < resume.onlineCerts.length - 1) push("")
+      })
+      push("")
     },
   }
 

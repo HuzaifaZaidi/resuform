@@ -1,6 +1,7 @@
 export const SECTION_DEFS = [
   { id: "summary", label: "Summary", header: "SUMMARY", kind: "text", core: true },
   { id: "education", label: "Education", header: "EDUCATION", kind: "education", core: true },
+  { id: "coursework", label: "Relevant Coursework", header: "RELEVANT COURSEWORK", kind: "coursework", core: false },
   { id: "experience", label: "Experience", header: "EXPERIENCE", kind: "roles", org: "Company", role: "Title", core: true },
   { id: "internships", label: "Internships", header: "INTERNSHIPS", kind: "roles", org: "Organization", role: "Role", core: false },
   { id: "fieldwork", label: "Fieldwork", header: "FIELDWORK", kind: "roles", org: "Organization", role: "Role", core: false },
@@ -8,6 +9,7 @@ export const SECTION_DEFS = [
   { id: "extracurricular", label: "Extra Curricular", header: "EXTRA CURRICULAR", kind: "roles", org: "Activity", role: "Role", core: false },
   { id: "projects", label: "Projects", header: "PROJECTS", kind: "projects", core: true },
   { id: "skills", label: "Technical Skills", header: "SKILLS", kind: "skills", core: true },
+  { id: "onlineCerts", label: "Online Certifications", header: "ONLINE CERTIFICATIONS", kind: "certs", core: false },
 ]
 
 export const DEFAULT_ORDER = SECTION_DEFS.filter((s) => s.core).map((s) => s.id)
@@ -27,6 +29,9 @@ export const SECTION_ALIASES = {
   education: "education",
   school: "education",
   schools: "education",
+  coursework: "coursework",
+  relevantcoursework: "coursework",
+  courses: "coursework",
   experience: "experience",
   work: "experience",
   employment: "experience",
@@ -51,6 +56,11 @@ export const SECTION_ALIASES = {
   skills: "skills",
   skill: "skills",
   technicalskills: "skills",
+  onlinecerts: "onlineCerts",
+  onlinecertifications: "onlineCerts",
+  certifications: "onlineCerts",
+  certificates: "onlineCerts",
+  certs: "onlineCerts",
   order: "order",
   sectionorder: "order",
 }
@@ -64,6 +74,8 @@ export function ensureResume(resume) {
   if (!resume.fieldwork) resume.fieldwork = []
   if (!resume.responsibilities) resume.responsibilities = []
   if (!resume.extracurricular) resume.extracurricular = []
+  if (!resume.coursework) resume.coursework = []
+  if (!resume.onlineCerts) resume.onlineCerts = []
   if (!Array.isArray(resume.sectionOrder) || !resume.sectionOrder.length) {
     resume.sectionOrder = [...DEFAULT_ORDER]
   }

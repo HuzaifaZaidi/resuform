@@ -170,7 +170,7 @@ a.btn, a.btn-ghost, a.btn-primary {
   top: calc(100% + 6px);
   right: 0;
   z-index: 15;
-  width: 260px;
+  width: 280px;
   padding: 12px;
   background: var(--bg-elev);
   border: 1px solid var(--line);
@@ -185,6 +185,13 @@ a.btn, a.btn-ghost, a.btn-primary {
   color: var(--ink-soft);
   font-weight: 600;
 }
+.layout-size {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.layout-size label { display: grid; gap: 4px; }
 .layout-margins {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -609,7 +616,6 @@ a.btn, a.btn-ghost, a.btn-primary {
   background: var(--page);
   line-height: 1.25;
 }
-.resume-page.a4 { width: 210mm; min-height: 297mm; }
 .resume-page.compact { font-size: 10pt; }
 .resume-page header.masthead,
 .resume-page .masthead {
@@ -677,6 +683,12 @@ a.btn, a.btn-ghost, a.btn-primary {
 }
 .resume-page .row { display: flex; justify-content: space-between; gap: 12px; }
 .resume-page .muted { font-size: 10.5pt; margin-top: 1px; }
+.resume-page article,
+.resume-page section,
+.resume-page h2 {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 .resume-page article { margin-bottom: 7px; }
 .resume-page ul { margin: 3px 0 0 18px; padding: 0; }
 .resume-page li { margin: 1px 0; }

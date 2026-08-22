@@ -25,6 +25,7 @@ _STRUCT_KEYS = {
     "has_responsibilities",
     "has_extracurricular",
     "has_certifications",
+    "has_coursework",
 }
 
 

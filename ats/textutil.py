@@ -70,7 +70,8 @@ SECTION_HEADINGS = {
     "internships": ("internship", "internships"),
     "projects": ("project", "projects"),
     "skills": ("skills", "technical skills", "technologies"),
-    "certifications": ("certification", "certifications", "licenses"),
+    "certifications": ("certification", "certifications", "licenses", "online certifications"),
+    "coursework": ("relevant coursework", "coursework", "courses"),
     "responsibilities": ("positions of responsibility", "leadership", "por"),
     "extracurricular": ("extra curricular", "extracurricular", "activities"),
 }

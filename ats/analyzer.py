@@ -86,6 +86,7 @@ def _section_flags(resume_text: str, structured: dict | None) -> dict[str, bool]
             "projects": bool(structured.get("has_projects")),
             "skills": bool(structured.get("has_skills")),
             "certifications": bool(structured.get("has_certifications")),
+            "coursework": bool(structured.get("has_coursework")),
             "responsibilities": bool(structured.get("has_responsibilities")),
             "extracurricular": bool(structured.get("has_extracurricular")),
         }
@@ -110,6 +111,7 @@ def score_structure(jd_text: str, resume_text: str, structured: dict | None) -> 
         ("projects", "Projects", "project" in jd),
         ("skills", "Skills", True),
         ("certifications", "Certifications", False),
+        ("coursework", "Relevant Coursework", False),
         ("responsibilities", "Positions of Responsibility", False),
         ("extracurricular", "Extra Curricular", False),
     ]
