@@ -297,7 +297,7 @@ function macros() {
 \displaywidowpenalty=10000
 \newcommand{\resumeItem}[1]{\item\small{#1 \vspace{-2pt}}}
 \newcommand{\resumeSubheading}[4]{
-  \Needspace{5\baselineskip}
+  \Needspace{8\baselineskip}
   \vspace{-1pt}\item
     \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
       \textbf{#1} & #2 \\
@@ -305,14 +305,14 @@ function macros() {
     \end{tabular*}\vspace{-7pt}
 }
 \newcommand{\resumeRoleHeading}[2]{
-  \Needspace{4\baselineskip}
+  \Needspace{8\baselineskip}
   \vspace{-1pt}\item
     \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
       #1 & #2 \\
     \end{tabular*}\vspace{-7pt}
 }
 \newcommand{\resumeProjectHeading}[2]{
-    \Needspace{4\baselineskip}
+    \Needspace{8\baselineskip}
     \item
     \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
       \small#1 & #2 \\
@@ -418,7 +418,7 @@ ${geometryPackage(resume, "classic")}
 \\raggedbottom
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[\\titlerule \\vspace{-5pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\vspace{-2pt}\\scshape\\raggedright\\Large\\bfseries}{}{0em}{}[\\titlerule[0.9pt] \\vspace{4pt}]
 ${macros()}
 ${body(resume)}
 `,
@@ -443,7 +443,7 @@ ${geometryPackage(resume, "modern")}
 \\raggedbottom
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\color{accent}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[{\\color{accent}\\titlerule}\\vspace{-5pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\color{accent}\\vspace{-2pt}\\scshape\\raggedright\\Large\\bfseries}{}{0em}{}[{\\color{accent}\\titlerule[0.9pt]}\\vspace{4pt}]
 ${macros()}
 ${body(resume)}
 `,
@@ -468,7 +468,7 @@ ${geometryPackage(resume, "compact")}
 \\setlist[itemize]{itemsep=1pt, parsep=0pt, topsep=2pt}
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\vspace{-6pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[\\titlerule \\vspace{-6pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[\\titlerule[0.8pt] \\vspace{3pt}]
 ${macros()}
 ${body(resume)}
 `,
@@ -491,7 +491,7 @@ ${geometryPackage(resume, "two_column")}
 \\raggedbottom
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[\\titlerule \\vspace{-5pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\vspace{-2pt}\\scshape\\raggedright\\Large\\bfseries}{}{0em}{}[\\titlerule[0.9pt] \\vspace{4pt}]
 ${macros()}
 ${bodyTwoColumn(resume)}
 `,
@@ -516,7 +516,7 @@ ${geometryPackage(resume, "modern_photo")}
 \\raggedbottom
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\color{accent}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[{\\color{accent}\\titlerule}\\vspace{-5pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\color{accent}\\vspace{-2pt}\\scshape\\raggedright\\Large\\bfseries}{}{0em}{}[{\\color{accent}\\titlerule[0.9pt]}\\vspace{4pt}]
 ${macros()}
 ${body(resume, headerWithPhoto(resume))}
 `,
@@ -540,7 +540,7 @@ ${geometryPackage(resume, "two_column_photo")}
 \\raggedbottom
 \\urlstyle{same}
 ${spacingCommands(resume)}
-\\titleformat{\\section}{\\Needspace{6\\baselineskip}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries}{}{0em}{}[\\titlerule \\vspace{-5pt}]
+\\titleformat{\\section}{\\Needspace{8\\baselineskip}\\vspace{-2pt}\\scshape\\raggedright\\Large\\bfseries}{}{0em}{}[\\titlerule[0.9pt] \\vspace{4pt}]
 ${macros()}
 ${bodyTwoColumn(resume, true)}
 `,

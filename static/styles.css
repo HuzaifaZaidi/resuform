@@ -269,9 +269,24 @@ a.btn, a.btn-ghost, a.btn-primary {
 .editor-tabs, .preview-tabs {
   display: flex;
   gap: 0;
+  align-items: center;
   padding: 0 8px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-elev);
+}
+.add-section-field {
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 6px 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+.editor.fields-mode .add-section-field { display: inline-flex; }
+.add-section-field select {
+  min-width: 148px;
 }
 .editor-tabs button, .preview-tabs button {
   background: transparent;
@@ -376,14 +391,16 @@ a.btn, a.btn-ghost, a.btn-primary {
   color: var(--ink);
 }
 .field-group[open] > summary {
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--line-strong);
 }
 .field-title {
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-size: 13px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-soft);
-  font-weight: 650;
+  color: var(--ink);
+  font-weight: 700;
 }
 .field-tools {
   margin-left: auto;
@@ -514,13 +531,24 @@ a.btn, a.btn-ghost, a.btn-primary {
   margin-top: 1px;
 }
 .card-head button {
-  background: none;
-  border: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
   color: var(--ink-soft);
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 5px;
 }
-.card-head button:hover { color: var(--bad); }
+.card-head button:hover { color: var(--ink); background: var(--bg); }
+.card-head button[data-remove]:hover { color: var(--bad); border-color: var(--bad); }
+.card-head button:disabled { opacity: 0.35; cursor: not-allowed; }
+.item-tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 100%;
+}
 
 .preview {
   display: flex;
@@ -670,11 +698,12 @@ a.btn, a.btn-ghost, a.btn-primary {
 .resume-page .sep { margin: 0 7px; color: #444; }
 .resume-page a { color: inherit; }
 .resume-page h2 {
-  font-size: 13pt;
+  font-size: 13.5pt;
   font-variant: small-caps;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid #111;
-  margin: 11px 0 6px;
+  letter-spacing: 0.14em;
+  border-bottom: 1.35px solid #111;
+  margin: 16px 0 10px;
+  padding-bottom: 3px;
   font-weight: 700;
 }
 .resume-page.modern h2 {

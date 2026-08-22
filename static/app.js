@@ -234,7 +234,19 @@ function compressPhoto(file) {
   })
 }
 
+function itemTools(kind, index, total) {
+  const last = total - 1
+  return `<span class="item-tools">
+    <button type="button" data-add-at="${kind}:${index}" title="Add a new item above this one">Above</button>
+    <button type="button" data-add-at="${kind}:${index + 1}" title="Add a new item below this one">Below</button>
+    <button type="button" data-move-item="${kind}:${index}:-1" title="Move up"${index === 0 ? " disabled" : ""}>Up</button>
+    <button type="button" data-move-item="${kind}:${index}:1" title="Move down"${index === last ? " disabled" : ""}>Down</button>
+    <button type="button" data-remove="${kind}:${index}">Remove</button>
+  </span>`
+}
+
 function roleCards(kind, items, orgLabel, roleLabel) {
+  const total = (items || []).length
   return (items || [])
     .map((item, i) => {
       const heading = item.title || item.company || `Entry ${i + 1}`
@@ -242,7 +254,7 @@ function roleCards(kind, items, orgLabel, roleLabel) {
       return `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(heading)}</strong>${sub ? `<em>${escapeAttr(sub)}</em>` : ""}</div>
-          <button type="button" data-remove="${kind}:${i}">Remove</button>
+          ${itemTools(kind, i, total)}
         </div>
         <div class="grid-2">
           ${field(`${kind}.${i}.company`, orgLabel, item.company)}
@@ -271,13 +283,14 @@ function renderSectionFields(r, id) {
   }
   if (def.kind === "education") {
     const tableEdu = r.educationLayout === "table"
-    const edu = (r.education || [])
+    const eduItems = r.education || []
+    const edu = eduItems
       .map((item, i) =>
         tableEdu
           ? `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.degree || item.school || `Row ${i + 1}`)}</strong>${item.school ? `<em>${escapeAttr(item.school)}</em>` : ""}</div>
-          <button type="button" data-remove="education:${i}">Remove</button>
+          ${itemTools("education", i, eduItems.length)}
         </div>
         <div class="grid-2">
           ${field(`education.${i}.degree`, "Course", item.degree)}
@@ -289,7 +302,7 @@ function renderSectionFields(r, id) {
           : `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.degree || item.school || `Education ${i + 1}`)}</strong>${item.school && item.degree ? `<em>${escapeAttr(item.school)}</em>` : ""}</div>
-          <button type="button" data-remove="education:${i}">Remove</button>
+          ${itemTools("education", i, eduItems.length)}
         </div>
         <div class="grid-2">
           ${field(`education.${i}.school`, "School", item.school)}
@@ -323,12 +336,13 @@ function renderSectionFields(r, id) {
     )
   }
   if (def.kind === "projects") {
-    const projects = (r.projects || [])
+    const projectItems = r.projects || []
+    const projects = projectItems
       .map(
         (item, i) => `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.name || `Project ${i + 1}`)}</strong>${item.tech ? `<em>${escapeAttr(item.tech)}</em>` : ""}</div>
-          <button type="button" data-remove="projects:${i}">Remove</button>
+          ${itemTools("projects", i, projectItems.length)}
         </div>
         <div class="grid-2">
           ${field(`projects.${i}.name`, "Name", item.name)}
@@ -349,12 +363,13 @@ function renderSectionFields(r, id) {
   }
   if (def.kind === "skills") {
     const colSkills = r.skillsLayout === "columns"
-    const skills = (r.skills || [])
+    const skillItems = r.skills || []
+    const skills = skillItems
       .map(
         (item, i) => `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.category || `Skill group ${i + 1}`)}</strong></div>
-          <button type="button" data-remove="skills:${i}">Remove</button>
+          ${itemTools("skills", i, skillItems.length)}
         </div>
         <div class="grid-2">
           ${field(`skills.${i}.category`, "Category", item.category)}
@@ -375,12 +390,13 @@ function renderSectionFields(r, id) {
     )
   }
   if (def.kind === "coursework") {
-    const rows = (r.coursework || [])
+    const courseItems = r.coursework || []
+    const rows = courseItems
       .map(
         (item, i) => `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.category || item.items || `Course group ${i + 1}`)}</strong></div>
-          <button type="button" data-remove="coursework:${i}">Remove</button>
+          ${itemTools("coursework", i, courseItems.length)}
         </div>
         <div class="grid-2">
           ${field(`coursework.${i}.category`, "Group (optional)", item.category)}
@@ -397,12 +413,13 @@ function renderSectionFields(r, id) {
     )
   }
   if (def.kind === "certs") {
-    const rows = (r.onlineCerts || [])
+    const certItems = r.onlineCerts || []
+    const rows = certItems
       .map(
         (item, i) => `<div class="card">
         <div class="card-head">
           <div><strong>${escapeAttr(item.name || `Certification ${i + 1}`)}</strong>${item.issuer ? `<em>${escapeAttr(item.issuer)}</em>` : ""}</div>
-          <button type="button" data-remove="onlineCerts:${i}">Remove</button>
+          ${itemTools("onlineCerts", i, certItems.length)}
         </div>
         <div class="grid-2">
           ${field(`onlineCerts.${i}.name`, "Name", item.name)}
@@ -424,13 +441,27 @@ function renderSectionFields(r, id) {
   return ""
 }
 
-function renderFields() {
+function refreshAddSection() {
+  const select = document.getElementById("add-section")
+  if (!select) return
   const r = ensureResume(state.resume)
   const order = r.sectionOrder?.length ? r.sectionOrder : DEFAULT_ORDER
   const unused = SECTION_DEFS.filter((def) => !order.includes(def.id))
-  const addOptions = unused
+  if (!unused.length) {
+    select.innerHTML = `<option value="">All optional sections added</option>`
+    select.disabled = true
+    return
+  }
+  select.disabled = false
+  select.innerHTML = `<option value="">Choose…</option>${unused
     .map((def) => `<option value="${def.id}">${def.label}</option>`)
-    .join("")
+    .join("")}`
+}
+
+function renderFields() {
+  const r = ensureResume(state.resume)
+  const order = r.sectionOrder?.length ? r.sectionOrder : DEFAULT_ORDER
+  refreshAddSection()
   els.fields.innerHTML = `
     ${sectionBlock(
       "Personal information",
@@ -452,25 +483,8 @@ function renderFields() {
       "",
       "personal"
     )}
-    ${sectionBlock(
-      "Formatting / layout",
-      "",
-      `<p class="hint">Use Up/Down on each section, or add Internships, Fieldwork, POR, Extra Curricular, Relevant Coursework, and Online Certifications. Template, paper size, and margins are in the header.</p>
-      ${addOptions ? `<label>Add section
-        <select id="add-section">
-          <option value="">Choose…</option>
-          ${addOptions}
-        </select>
-      </label>` : "<p class='hint'>All optional sections are on the resume.</p>"}`,
-      "",
-      "layout"
-    )}
     ${order.map((id) => renderSectionFields(r, id)).join("")}
   `
-  document.getElementById("add-section")?.addEventListener("change", (event) => {
-    const id = event.target.value
-    if (id) addSection(id)
-  })
   document.getElementById("photo-file")?.addEventListener("change", async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -510,26 +524,35 @@ function setByPath(path, value) {
   state.resume[list][Number(index)][key] = value
 }
 
-function addItem(kind) {
+function blankItem(kind) {
   const id = crypto.randomUUID()
+  if (kind === "education") return { id, school: "", degree: "", location: "", dates: "", details: "", score: "" }
+  if (kind === "projects") return { id, name: "", tech: "", link: "", dates: "", bullets: "" }
+  if (kind === "skills" || kind === "coursework") return { id, category: "", items: "" }
+  if (kind === "onlineCerts") return { id, name: "", issuer: "", dates: "", link: "", details: "" }
+  return { id, company: "", title: "", location: "", dates: "", bullets: "" }
+}
+
+function itemList(kind) {
   ensureResume(state.resume)
+  if (!Array.isArray(state.resume[kind])) state.resume[kind] = []
+  return state.resume[kind]
+}
+
+function addItem(kind, at) {
   if (kind) openSections.add(kind)
-  if (kind === "education") {
-    state.resume.education.push({ id, school: "", degree: "", location: "", dates: "", details: "", score: "" })
-  } else if (kind === "projects") {
-    state.resume.projects.push({ id, name: "", tech: "", link: "", dates: "", bullets: "" })
-  } else if (kind === "skills") {
-    state.resume.skills.push({ id, category: "", items: "" })
-  } else if (kind === "coursework") {
-    if (!Array.isArray(state.resume.coursework)) state.resume.coursework = []
-    state.resume.coursework.push({ id, category: "", items: "" })
-  } else if (kind === "onlineCerts") {
-    if (!Array.isArray(state.resume.onlineCerts)) state.resume.onlineCerts = []
-    state.resume.onlineCerts.push({ id, name: "", issuer: "", dates: "", link: "", details: "" })
-  } else if (["experience", "internships", "fieldwork", "responsibilities", "extracurricular"].includes(kind)) {
-    if (!Array.isArray(state.resume[kind])) state.resume[kind] = []
-    state.resume[kind].push({ id, company: "", title: "", location: "", dates: "", bullets: "" })
-  }
+  const list = itemList(kind)
+  const index = Number.isFinite(Number(at)) ? Math.max(0, Math.min(list.length, Number(at))) : list.length
+  list.splice(index, 0, blankItem(kind))
+  syncFromFields()
+}
+
+function moveItem(kind, index, delta) {
+  const list = itemList(kind)
+  const from = Number(index)
+  const to = from + Number(delta)
+  if (from < 0 || to < 0 || to >= list.length) return
+  ;[list[from], list[to]] = [list[to], list[from]]
   syncFromFields()
 }
 
@@ -591,6 +614,7 @@ function setMode(mode) {
   document.querySelectorAll(".editor-tabs button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.mode === mode)
   })
+  document.querySelector(".editor")?.classList.toggle("fields-mode", mode === "fields")
   els.source.style.display = mode === "text" ? "block" : "none"
   els.fields.classList.toggle("open", mode === "fields")
   if (mode === "fields") {
@@ -672,10 +696,48 @@ function rowInk(canvas, y) {
   return ink
 }
 
-function findPageBreak(canvas, fromY, idealY) {
+function collectPdfKeepBlocks(clone, root, scale) {
+  const rel = (el) => {
+    const box = el.getBoundingClientRect()
+    return {
+      top: (box.top - root.top) * scale,
+      bottom: (box.bottom - root.top) * scale,
+    }
+  }
+  const blocks = []
+  for (const el of clone.querySelectorAll("article, .edu-table, .skills-cols, p.summary")) {
+    blocks.push(rel(el))
+  }
+  for (const h2 of clone.querySelectorAll(".resume-page h2")) {
+    const heading = rel(h2)
+    const next = h2.nextElementSibling
+    if (next) {
+      const body = rel(next)
+      blocks.push({ top: heading.top, bottom: Math.max(heading.bottom, body.bottom) })
+    } else {
+      blocks.push(heading)
+    }
+  }
+  blocks.sort((a, b) => a.top - b.top)
+  return blocks
+}
+
+function findPageBreak(canvas, fromY, idealY, blocks, pageHeightPx) {
   const maxY = canvas.height
   const target = Math.min(Math.round(idealY), maxY)
   if (target >= maxY - 1) return maxY
+
+  let keepAt = null
+  for (const block of blocks || []) {
+    const height = block.bottom - block.top
+    if (height > pageHeightPx - 2) continue
+    if (block.top < fromY + 12) continue
+    if (block.top < target - 2 && block.bottom > target + 2) {
+      if (keepAt == null || block.top < keepAt) keepAt = block.top
+    }
+  }
+  if (keepAt != null) return Math.max(fromY + 1, Math.floor(keepAt) - 1)
+
   const minY = Math.max(fromY + 80, Math.round(fromY + (idealY - fromY) * 0.72))
   let best = target
   let bestInk = Infinity
@@ -699,12 +761,20 @@ async function pdfFromProof() {
   const JsPDF = window.jspdf?.jsPDF
   if (!html2canvas || !JsPDF) throw new Error("PDF tools did not load. Refresh the page and try again.")
 
+  const size = normalizePaperSize(state.paperSize, state.page)
+  const margins = normalizeMargins(state.margins, state.template)
+  const contentWidthIn = Math.max(1, size.width - margins.left - margins.right)
+
   const holder = document.createElement("div")
   holder.setAttribute("aria-hidden", "true")
   holder.style.cssText = "position:fixed;left:-14000px;top:0;background:#fffdf8;"
   const clone = source.cloneNode(true)
   clone.style.transform = "none"
   clone.style.margin = "0"
+  clone.style.padding = "0"
+  clone.style.width = `${contentWidthIn}in`
+  clone.style.minHeight = "0"
+  clone.style.boxSizing = "border-box"
   holder.appendChild(clone)
   document.body.appendChild(holder)
   try {
@@ -716,6 +786,7 @@ async function pdfFromProof() {
       letterRendering: true,
     })
     const root = clone.getBoundingClientRect()
+    const scale = canvas.width / Math.max(1, root.width)
     const links = [...clone.querySelectorAll("a[href]")].map((anchor) => {
       const box = anchor.getBoundingClientRect()
       return {
@@ -726,7 +797,7 @@ async function pdfFromProof() {
         h: box.height,
       }
     })
-    const size = normalizePaperSize(state.paperSize, state.page)
+    const keepBlocks = collectPdfKeepBlocks(clone, root, scale)
     const pdf = new JsPDF({
       unit: "pt",
       format: [size.width * 72, size.height * 72],
@@ -734,8 +805,14 @@ async function pdfFromProof() {
     })
     const pageW = pdf.internal.pageSize.getWidth()
     const pageH = pdf.internal.pageSize.getHeight()
-    const ratio = pageW / canvas.width
-    const pageHeightPx = pageH / ratio
+    const mTop = margins.top * 72
+    const mRight = margins.right * 72
+    const mBottom = margins.bottom * 72
+    const mLeft = margins.left * 72
+    const contentW = Math.max(1, pageW - mLeft - mRight)
+    const contentH = Math.max(1, pageH - mTop - mBottom)
+    const ratio = contentW / canvas.width
+    const pageHeightPx = contentH / ratio
     const breaks = [0]
     let cursor = 0
     while (cursor < canvas.height - 0.5) {
@@ -744,7 +821,7 @@ async function pdfFromProof() {
         breaks.push(canvas.height)
         break
       }
-      breaks.push(findPageBreak(canvas, cursor, cursor + pageHeightPx))
+      breaks.push(Math.max(cursor + 1, findPageBreak(canvas, cursor, cursor + pageHeightPx, keepBlocks, pageHeightPx)))
       cursor = breaks[breaks.length - 1]
     }
     let first = true
@@ -764,9 +841,10 @@ async function pdfFromProof() {
         }
       }
       first = false
-      pdf.addImage(slice.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, pageW, slice.height * ratio, undefined, "FAST")
+      pdf.setFillColor(255, 253, 248)
+      pdf.rect(0, 0, pageW, pageH, "F")
+      pdf.addImage(slice.toDataURL("image/jpeg", 0.93), "JPEG", mLeft, mTop, contentW, slice.height * ratio, undefined, "FAST")
     }
-    const scale = canvas.width / root.width
     for (const link of links) {
       if (!link.url || link.url.startsWith("javascript:") || link.w < 1 || link.h < 1) continue
       let top = link.y
@@ -781,10 +859,10 @@ async function pdfFromProof() {
         const hOnPagePx = Math.min(remain * scale, pageSpan - yOnPagePx)
         pdf.setPage(pageIndex + 1)
         pdf.link(
-          (link.x / root.width) * pageW,
-          (yOnPagePx / pageSpan) * (pageSpan * ratio),
-          (link.w / root.width) * pageW,
-          (hOnPagePx / pageSpan) * (pageSpan * ratio),
+          mLeft + (link.x / root.width) * contentW,
+          mTop + yOnPagePx * ratio,
+          (link.w / root.width) * contentW,
+          hOnPagePx * ratio,
           { url: link.url }
         )
         const hOnPageCss = hOnPagePx / scale
@@ -1080,6 +1158,14 @@ document.querySelectorAll(".preview-tabs button").forEach((btn) => {
   btn.addEventListener("click", () => setView(btn.dataset.view))
 })
 
+document.getElementById("add-section")?.addEventListener("change", (event) => {
+  const id = event.target.value
+  if (!id) return
+  addSection(id)
+  event.target.value = ""
+  refreshAddSection()
+})
+
 els.toggleGuide.addEventListener("click", () => {
   const open = els.guide.classList.toggle("open")
   els.toggleGuide.textContent = open ? "Hide format" : "Show format"
@@ -1101,10 +1187,12 @@ els.fields.addEventListener("input", (event) => {
 els.fields.addEventListener("click", (event) => {
   if (event.target.closest("[data-stop-toggle]")) event.preventDefault()
   const add = event.target.closest("[data-add]")?.dataset.add
+  const addAt = event.target.closest("[data-add-at]")?.dataset.addAt
   const remove = event.target.closest("[data-remove]")?.dataset.remove
   const layout = event.target.closest("[data-edu-layout]")?.dataset.eduLayout
   const skillsLayout = event.target.closest("[data-skills-layout]")?.dataset.skillsLayout
   const move = event.target.closest("[data-move]")?.dataset.move
+  const moveItemSpec = event.target.closest("[data-move-item]")?.dataset.moveItem
   const drop = event.target.closest("[data-drop-section]")?.dataset.dropSection
   if (skillsLayout) {
     state.resume.skillsLayout = skillsLayout
@@ -1129,8 +1217,18 @@ els.fields.addEventListener("click", (event) => {
     moveSection(id, delta)
     return
   }
+  if (moveItemSpec) {
+    const [kind, index, delta] = moveItemSpec.split(":")
+    moveItem(kind, index, delta)
+    return
+  }
   if (drop) {
     dropSection(drop)
+    return
+  }
+  if (addAt) {
+    const [kind, index] = addAt.split(":")
+    addItem(kind, Number(index))
     return
   }
   if (add) addItem(add)
